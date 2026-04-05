@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { render, Box, Text, Static } from 'ink';
+import { render, Box, Text } from 'ink';
 import TextInput from 'ink-text-input';
+import Markdown from 'ink-markdown';
 import { runEngine, EngineConfig } from '../../core/engine.js';
 import type { Channel } from '../base.js';
 import type { EngineEvent, Message, ToolSchema } from '../../core/types.js';
@@ -115,11 +116,17 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
       {/* Claude Code Style History (Replacing Static to prevent infinite scrolling bugs during animation ticks) */}
       <Box flexDirection="column" marginBottom={1}>
         {chatLog.map((msg, index) => (
-          <Box key={index} flexDirection="column" paddingY={0}>
+          <Box key={index} flexDirection="column" paddingY={0} marginTop={1}>
             <Text bold color={msg.role === 'user' ? 'blue' : 'green'}>
-              {msg.role === 'user' ? 'You: ' : 'PixPal: '}
+              {msg.role === 'user' ? 'You:' : 'PixPal:'}
             </Text>
-            <Text>{msg.content}</Text>
+            {msg.role === 'user' ? (
+              <Text>{msg.content}</Text>
+            ) : (
+              <Box paddingLeft={2} flexDirection="column">
+                <Markdown>{msg.content}</Markdown>
+              </Box>
+            )}
           </Box>
         ))}
       </Box>
