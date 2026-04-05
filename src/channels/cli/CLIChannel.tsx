@@ -111,17 +111,17 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
         <Text bold color="magenta">✨ PixPal Terminal Initialized. Type 'exit' to quit.</Text>
       </Box>
 
-      {/* Claude Code Style Scrolling History */}
-      <Static items={chatLog}>
-        {(msg, index) => (
-          <Box key={index} flexDirection="column" paddingY={1}>
+      {/* Claude Code Style History (Replacing Static to prevent infinite scrolling bugs during animation ticks) */}
+      <Box flexDirection="column" marginBottom={1}>
+        {chatLog.map((msg, index) => (
+          <Box key={index} flexDirection="column" paddingY={0}>
             <Text bold color={msg.role === 'user' ? 'blue' : 'green'}>
-              {msg.role === 'user' ? 'You' : 'PixPal'}
+              {msg.role === 'user' ? 'You: ' : 'PixPal: '}
             </Text>
             <Text>{msg.content}</Text>
           </Box>
-        )}
-      </Static>
+        ))}
+      </Box>
 
       {/* Active Processing Area (The Diorama) */}
       {isProcessing && (
