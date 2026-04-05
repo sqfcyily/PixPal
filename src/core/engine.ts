@@ -19,7 +19,7 @@ export async function* runEngine(
   let loops = 0;
 
   const messages: Message[] = [
-    { role: 'system', content: 'You are PixelTasker, a helpful assistant. Always use tools when necessary.' },
+    { role: 'system', content: 'You are PixPal, a helpful assistant. Always use tools when necessary.' },
     { role: 'user', content: initialPrompt }
   ];
 

@@ -18,7 +18,7 @@ export class FeishuChannel implements Channel {
   onMessage(callback: (message: string) => void): void {
     console.log('[Feishu] Listening for incoming messages...');
     // Simulate a message from Feishu for testing
-    // setTimeout(() => callback('Hello PixelTasker, please echo this test!'), 2000);
+    // setTimeout(() => callback('Hello PixPal, please echo this test!'), 2000);
   }
 
   async sendMessage(content: string): Promise<string> {

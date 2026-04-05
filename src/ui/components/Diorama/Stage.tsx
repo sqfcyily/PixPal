@@ -35,7 +35,7 @@ export const DioramaStage: React.FC<{ state: DioramaState }> = ({ state }) => {
   return (
     <Box flexDirection="column" borderStyle="round" borderColor={color} paddingX={2} marginY={1}>
       <Box marginBottom={1}>
-        <Text bold color={color}>=== PixelTasker Diorama Stage ===</Text>
+        <Text bold color={color}>=== PixPal Diorama Stage ===</Text>
       </Box>
       <Box>
         <Text color={color}>{`[${state.status}] `}</Text>

@@ -9,7 +9,7 @@ export class CLIChannel implements Channel {
 
   async connect(): Promise<void> {
     console.clear();
-    console.log('PixelTasker CLI Initialized. Waiting for tasks...');
+    console.log('PixPal CLI Initialized. Waiting for tasks...');
   }
 
   onMessage(callback: (message: string) => void): void {

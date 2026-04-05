@@ -1,24 +1,55 @@
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as readline from 'readline';
 import { runEngine } from './core/engine.js';
 import { CLIChannel } from './channels/cli/CLIChannel.js';
 import { FeishuChannel } from './channels/feishu/FeishuChannel.js';
 import type { Channel } from './channels/base.js';
 
-// Initialize configuration from .env or .agentrc
-dotenv.config({ path: '.agentrc' });
+const CONFIG_FILE = '.agentrc';
 
-const config = {
-  baseUrl: process.env.BASE_URL || 'https://api.openai.com/v1',
-  apiKey: process.env.API_KEY || '',
-  model: process.env.MODEL_NAME || 'gpt-4o',
-  language: process.env.LANGUAGE || 'en-US',
-  channel: process.env.CHANNEL || 'cli',
-  feishuAppId: process.env.FEISHU_APP_ID || '',
-  feishuAppSecret: process.env.FEISHU_APP_SECRET || ''
-};
+function askQuestion(query: string): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => rl.question(query, ans => {
+    rl.close();
+    resolve(ans);
+  }));
+}
+
+async function initConfig(): Promise<void> {
+  if (!fs.existsSync(CONFIG_FILE)) {
+    console.log('✨ Welcome to PixPal! Let\'s set up your agent.\n');
+    const baseUrl = await askQuestion('🔗 Enter BASE_URL (e.g. https://api.openai.com/v1): ');
+    const model = await askQuestion('🤖 Enter MODEL_NAME (e.g. gpt-4o): ');
+    const apiKey = await askQuestion('🔑 Enter API_KEY: ');
+    
+    const configContent = `BASE_URL=${baseUrl || 'https://api.openai.com/v1'}\nMODEL_NAME=${model || 'gpt-4o'}\nAPI_KEY=${apiKey}\nLANGUAGE=en-US\nCHANNEL=cli\n`;
+    fs.writeFileSync(CONFIG_FILE, configContent, 'utf-8');
+    console.log(`\n✅ Configuration saved to ${CONFIG_FILE}\n`);
+  }
+}
 
 async function main() {
-  console.log(`\n🚀 PixelTasker Starting... [Model: ${config.model}, Channel: ${config.channel}]\n`);
+  await initConfig();
+  
+  // Initialize configuration from .env or .agentrc
+  dotenv.config({ path: CONFIG_FILE });
+
+  const config = {
+    baseUrl: process.env.BASE_URL || 'https://api.openai.com/v1',
+    apiKey: process.env.API_KEY || '',
+    model: process.env.MODEL_NAME || 'gpt-4o',
+    language: process.env.LANGUAGE || 'en-US',
+    channel: process.env.CHANNEL || 'cli',
+    feishuAppId: process.env.FEISHU_APP_ID || '',
+    feishuAppSecret: process.env.FEISHU_APP_SECRET || ''
+  };
+
+  console.log(`\n🚀 PixPal Starting... [Model: ${config.model}, Channel: ${config.channel}]\n`);
 
   let activeChannel: Channel;
 
@@ -32,7 +63,7 @@ async function main() {
   await activeChannel.connect();
 
   // Test prompt - in a real app, this comes from channel.onMessage
-  const testPrompt = "Hello! Please use the echo tool to say 'PixelTasker is alive!'";
+  const testPrompt = "Hello! Please use the echo tool to say 'PixPal is alive!'";
   
   // Create the AsyncGenerator stream
   // Note: For now, we mock the tools import. In reality, you'd export the schema array from tools/index.ts
