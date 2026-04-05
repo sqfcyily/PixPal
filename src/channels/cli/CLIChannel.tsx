@@ -9,16 +9,15 @@ export class CLIChannel implements Channel {
 
   async connect(): Promise<void> {
     console.clear();
-    console.log('PixPal CLI Initialized. Waiting for tasks...');
+    console.log('✨ PixPal CLI Initialized. Type your message below.\n');
   }
 
   onMessage(callback: (message: string) => void): void {
-    // In a real CLI, we'd use process.stdin.on('data') or a prompt loop.
-    // For now, we simulate an input from the user.
+    // In a real CLI, we use readline for user input. Handled directly in index.ts for loop control.
   }
 
   async sendMessage(content: string): Promise<string> {
-    console.log(content);
+    // Message rendering is handled by React UI
     return 'cli-msg-1';
   }
 
@@ -27,11 +26,16 @@ export class CLIChannel implements Channel {
   }
 
   async renderEngineStream(prompt: string, stream: AsyncGenerator<EngineEvent, void, unknown>): Promise<void> {
+    // Unmount previous instance if exists to keep terminal clean
+    if (this.renderInstance) {
+      this.renderInstance.unmount();
+    }
+    
     this.renderInstance = render(<CLIRootApp prompt={prompt} stream={stream} />);
     
-    // Wait until the stream finishes to unmount the React app if necessary
+    // Wait until the stream finishes
     for await (const event of stream) {
-       // Loop consumed by React hook inside CLIRootApp, this is just to keep async context open
+       // Loop consumed by React hook inside CLIRootApp
     }
   }
 }
@@ -74,12 +78,8 @@ const CLIRootApp: React.FC<{ prompt: string, stream: AsyncGenerator<EngineEvent,
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Text bold color="yellow">User Input: {prompt}</Text>
+      <Text bold color="yellow">You: {prompt}</Text>
       <DioramaStage state={dioramaState} />
-      <Box flexDirection="column" marginTop={1}>
-        <Text dimColor>--- System Logs ---</Text>
-        {logs.slice(-3).map((log, i) => <Text key={i} dimColor>{log}</Text>)}
-      </Box>
     </Box>
   );
 };

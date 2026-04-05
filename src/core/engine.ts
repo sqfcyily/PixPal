@@ -11,17 +11,12 @@ export interface EngineConfig extends LLMConfig {
  * Uses async generators to yield lifecycle events to the channels (CLI/Feishu).
  */
 export async function* runEngine(
-  initialPrompt: string,
+  messages: Message[], // Changed from initialPrompt to accept the full message history
   tools: ToolSchema[],
   config: EngineConfig
 ): AsyncGenerator<EngineEvent, void, unknown> {
   const maxLoops = config.maxLoops || 10;
   let loops = 0;
-
-  const messages: Message[] = [
-    { role: 'system', content: 'You are PixPal, a helpful assistant. Always use tools when necessary.' },
-    { role: 'user', content: initialPrompt }
-  ];
 
   while (loops < maxLoops) {
     loops++;

@@ -62,11 +62,6 @@ async function main() {
 
   await activeChannel.connect();
 
-  // Test prompt - in a real app, this comes from channel.onMessage
-  const testPrompt = "Hello! Please use the echo tool to say 'PixPal is alive!'";
-  
-  // Create the AsyncGenerator stream
-  // Note: For now, we mock the tools import. In reality, you'd export the schema array from tools/index.ts
   const tools = [{
     type: 'function' as const,
     function: {
@@ -80,10 +75,28 @@ async function main() {
     }
   }];
 
-  const stream = runEngine(testPrompt, tools, config);
+  // State: Maintain context across the entire session
+  const sessionMessages: any[] = [
+    { role: 'system', content: `You are PixPal, a helpful pixel-art assistant. Always use tools when necessary. Language preference: ${config.language}.` }
+  ];
 
-  // Hand the stream over to the channel for rendering
-  await activeChannel.renderEngineStream(testPrompt, stream);
+  // Infinite REPL Loop
+  while (true) {
+    const userInput = await askQuestion('\n> ');
+    if (!userInput.trim()) continue;
+    if (userInput.trim().toLowerCase() === 'exit' || userInput.trim().toLowerCase() === 'quit') {
+      console.log('Goodbye! 👋');
+      process.exit(0);
+    }
+
+    sessionMessages.push({ role: 'user', content: userInput });
+
+    // Run engine and pass the full message history
+    const stream = runEngine(sessionMessages, tools, config);
+
+    // Block and wait for the channel to render the stream fully before asking for next input
+    await activeChannel.renderEngineStream(userInput, stream);
+  }
 }
 
 main().catch(err => {
