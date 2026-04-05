@@ -21,7 +21,6 @@ export class CLIChannel implements Channel {
     await waitUntilExit();
   }
 
-  // Not used in this persistent UI model, handled inside React
   onMessage() {}
   async sendMessage() { return ''; }
   async updateMessage() {}
@@ -31,37 +30,53 @@ export class CLIChannel implements Channel {
 // ---------------------------------------------------------
 // React Root for the CLI Channel
 // ---------------------------------------------------------
+type RobotState = 'idle' | 'thinking' | 'working' | 'success' | 'error';
+
 const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ config, tools }) => {
-  // messages array contains the full context needed for the LLM
   const [messages, setMessages] = useState<Message[]>([
     { role: 'system', content: `You are PixPal, a helpful pixel-art assistant. Always use tools when necessary. Language preference: ${config.language || 'en-US'}.` }
   ]);
   
-  // history array ONLY contains fully completed messages for the Static renderer
   const [history, setHistory] = useState<Message[]>([]);
-
   const [input, setInput] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Advanced State Tracking
+  const [appState, setAppState] = useState<RobotState>('idle');
   const [statusText, setStatusText] = useState('Ready');
   const [currentStream, setCurrentStream] = useState('');
-  
-  // Pixel Art Animation state
   const [frameIdx, setFrameIdx] = useState(0);
   
-  // Retro Pixel Robot Art
-  const idleFrames = [
-    " ▄▀▀▄ \n █--█ \n ▀▄▄▀ ",
-    " ▄▀▀▄ \n █oo█ \n ▀▄▄▀ "
-  ];
-  const workFrames = [
-    " ▄▀▀▄ \n █><█ \n ▀▄▄▀ ",
-    " ▄▀▀▄ \n █><█ \n ▀▄▄▀ "
-  ];
+  const isProcessing = appState === 'thinking' || appState === 'working';
+
+  // 🤖 Emotion & Animation Dictionary
+  const robotFrames: Record<RobotState, string[]> = {
+    idle: [
+      " ▄▀▀▄ \n █--█ \n ▀▄▄▀ ", // Waiting (Blinking)
+      " ▄▀▀▄ \n █oo█ \n ▀▄▄▀ "  // Waiting (Eyes open)
+    ],
+    thinking: [
+      " ▄▀▀▄ \n █··█ \n ▀▄▄▀ ", // Thinking (Looking left)
+      " ▄▀▀▄ \n █••█ \n ▀▄▄▀ "  // Thinking (Looking right)
+    ],
+    working: [
+      " ▄▀▀▄ \n █><█ \n ▀▄▄▀ ", // Working hard (Straining)
+      " ▄▀▀▄ \n █><█ \n ▀▄▄▀ "
+    ],
+    success: [
+      " ▄▀▀▄ \n █^^█ \n ▀▄▄▀ ", // Happy / Success
+      " ▄▀▀▄ \n █^^█ \n ▀▄▄▀ "
+    ],
+    error: [
+      " ▄▀▀▄ \n █xx█ \n ▀▄▄▀ ", // Dead / Error
+      " ▄▀▀▄ \n █XX█ \n ▀▄▄▀ "
+    ]
+  };
 
   useEffect(() => {
+    const speed = isProcessing ? 200 : 800;
     const timer = setInterval(() => {
       setFrameIdx(prev => (prev + 1) % 2);
-    }, isProcessing ? 200 : 800);
+    }, speed);
     return () => clearInterval(timer);
   }, [isProcessing]);
 
@@ -72,16 +87,13 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
     }
 
     const userMsg = { role: 'user' as const, content: text };
-    
-    // 1. Immediately push user's text to Static History so it permanently renders
     setHistory(prev => [...prev, userMsg]);
 
-    // 2. Append to full LLM context
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     
     setInput('');
-    setIsProcessing(true);
+    setAppState('thinking');
     setStatusText('Thinking...');
     setCurrentStream('');
 
@@ -90,31 +102,36 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
       for await (const event of stream) {
         switch (event.type) {
           case 'thinking':
+            setAppState('thinking');
             setStatusText('Thinking...');
             setCurrentStream(event.content);
             break;
           case 'tool_start':
+            setAppState('working');
             setStatusText(`Executing Tool [${event.toolName}]...`);
             break;
           case 'tool_end':
+            setAppState('thinking');
             setStatusText(`Tool [${event.toolName}] finished.`);
             break;
           case 'completed':
-            // 3. Update full LLM context with final response
             setMessages(event.finalMessages);
-            // 4. Push final response to Static History to permanently render
             setHistory(prev => [...prev, { role: 'assistant', content: event.content }]);
-            
             setCurrentStream('');
-            setIsProcessing(false);
+            
+            // Brief success celebration before going back to idle
+            setAppState('success');
+            setTimeout(() => setAppState('idle'), 2500);
             break;
           case 'error':
             const errorMsg = { role: 'assistant' as const, content: `❌ Error: ${event.error.message}` };
             setMessages([...newMessages, errorMsg]);
             setHistory(prev => [...prev, errorMsg]);
-            
             setCurrentStream('');
-            setIsProcessing(false);
+            
+            // Show error state before resetting
+            setAppState('error');
+            setTimeout(() => setAppState('idle'), 3000);
             break;
         }
       }
@@ -122,9 +139,10 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
       const fatalErrorMsg = { role: 'assistant' as const, content: `❌ Fatal Error: ${e.message}` };
       setMessages([...newMessages, fatalErrorMsg]);
       setHistory(prev => [...prev, fatalErrorMsg]);
-      
       setCurrentStream('');
-      setIsProcessing(false);
+      
+      setAppState('error');
+      setTimeout(() => setAppState('idle'), 3000);
     }
   };
 
@@ -154,25 +172,28 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
 
       {/* Active Processing Area (The Diorama & Live Stream) */}
       {isProcessing && (
-        <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={2} marginY={1}>
+        <Box flexDirection="column" borderStyle="round" borderColor={appState === 'working' ? 'yellow' : 'cyan'} paddingX={2} marginY={1}>
           <Box alignItems="center">
             <Box marginRight={2}>
-              <Text bold color="cyan">{workFrames[frameIdx]}</Text>
+              <Text bold color={appState === 'working' ? 'yellow' : 'cyan'}>
+                {robotFrames[appState][frameIdx]}
+              </Text>
             </Box>
-            <Text color="yellow">{statusText}</Text>
+            <Text color={appState === 'working' ? 'yellow' : 'cyan'}>{statusText}</Text>
           </Box>
           <Box marginTop={1}>
-            {/* Streamed partial markdown might look funky briefly, but Text provides stable fallback */}
             <Markdown>{currentStream}</Markdown>
           </Box>
         </Box>
       )}
 
-      {/* Input Area */}
+      {/* Input Area (Idle / Success / Error) */}
       {!isProcessing && (
         <Box marginTop={1}>
           <Box marginRight={1}>
-            <Text color="blue">{idleFrames[frameIdx]}</Text>
+            <Text color={appState === 'success' ? 'green' : appState === 'error' ? 'red' : 'blue'}>
+              {robotFrames[appState][frameIdx]}
+            </Text>
           </Box>
           <Box flexDirection="column" justifyContent="center">
             <Box>
