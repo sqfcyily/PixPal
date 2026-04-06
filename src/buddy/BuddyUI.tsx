@@ -52,7 +52,14 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[], skillInst
   useInput((input, key) => {
     // Ctrl+O for Open/Observe Inspector
     if (key.ctrl && input === 'o') {
-      setShowInspector(prev => !prev);
+      setShowInspector(prev => {
+        if (prev) {
+          // When closing a very large panel, Ink might leave ghost lines behind.
+          // Forcing a clear screen cleans up the canvas perfectly.
+          console.clear();
+        }
+        return !prev;
+      });
     }
   });
 
@@ -83,12 +90,18 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[], skillInst
   };
 
   useEffect(() => {
+    // 💡 UX Fix: Disable continuous animations in Dev Mode to allow smooth terminal scrolling
+    if (config.isDev) {
+      setFrameIdx(0);
+      return;
+    }
+
     const speed = isProcessing ? 200 : 800;
     const timer = setInterval(() => {
       setFrameIdx(prev => (prev + 1) % 2);
     }, speed);
     return () => clearInterval(timer);
-  }, [isProcessing]);
+  }, [isProcessing, config.isDev]);
 
   const handleSubmit = async (text: string) => {
     if (!text.trim()) return;
