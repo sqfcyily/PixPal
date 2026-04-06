@@ -47,13 +47,28 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[], skillInst
   
   const isProcessing = appState === 'thinking' || appState === 'working';
 
-  // 🤖 Emotion & Animation Dictionary
+  // ⚡ Pikachu Emotion & Animation Dictionary
   const robotFrames: Record<RobotState, string[]> = {
-    idle: [" ▄▀▀▄ \n █--█ \n ▀▄▄▀ ", " ▄▀▀▄ \n █oo█ \n ▀▄▄▀ "],
-    thinking: [" ▄▀▀▄ \n █··█ \n ▀▄▄▀ ", " ▄▀▀▄ \n █••█ \n ▀▄▄▀ "],
-    working: [" ▄▀▀▄ \n █><█ \n ▀▄▄▀ ", " ▄▀▀▄ \n █><█ \n ▀▄▄▀ "],
-    success: [" ▄▀▀▄ \n █^^█ \n ▀▄▄▀ ", " ▄▀▀▄ \n █^^█ \n ▀▄▄▀ "],
-    error: [" ▄▀▀▄ \n █xx█ \n ▀▄▄▀ ", " ▄▀▀▄ \n █XX█ \n ▀▄▄▀ "]
+    idle: [
+      "  /\\___/\\  \n (  o.o  ) \n  > @w@ <  ",
+      "  /\\___/\\  \n (  -.-  ) \n  > @w@ <  "
+    ],
+    thinking: [
+      "  /\\___/\\ ?\n (  o.-  ) \n  > @w@ <  ",
+      "  /\\___/\\  \n (  o.-  )?\n  > @w@ <  "
+    ],
+    working: [
+      "  /\\___/\\ ⚡\n (  >.<  ) \n  > @w@ <  ",
+      "  /\\___/\\  \n (  >_<  ) ⚡\n  > @w@ <  "
+    ],
+    success: [
+      "  /\\___/\\ ✨\n (  ^.^  ) \n  > @w@ <  ",
+      "  /\\___/\\  \n (  ^O^  ) ✨\n  \\ @w@ /  "
+    ],
+    error: [
+      "  /\\___/\\ 💧\n (  x.x  ) \n  > @~@ <  ",
+      "  /\\___/\\  \n (  X.X  ) 💧\n  > @~@ <  "
+    ]
   };
 
   useEffect(() => {
@@ -170,7 +185,7 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[], skillInst
         {(appState === 'idle' || appState === 'success' || appState === 'error') && (
           <Box marginTop={1}>
             <Box marginRight={1}>
-              <Text color={appState === 'success' ? 'green' : appState === 'error' ? 'red' : 'blue'}>
+              <Text color={appState === 'success' ? 'green' : appState === 'error' ? 'red' : 'yellow'}>
                 {robotFrames[appState][frameIdx]}
               </Text>
             </Box>
