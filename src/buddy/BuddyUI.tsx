@@ -50,8 +50,8 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[], skillInst
   const [debugLogs, setDebugLogs] = useState<any[]>([]);
 
   useInput((input, key) => {
-    // Note: Ctrl+I is mapped to Tab in many terminals, so we use Ctrl+V (View) instead
-    if (key.ctrl && input === 'v') {
+    // Ctrl+O for Open/Observe Inspector
+    if (key.ctrl && input === 'o') {
       setShowInspector(prev => !prev);
     }
   });
@@ -225,7 +225,7 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[], skillInst
         {config.isDev && (
           <Box marginTop={1} flexDirection="column">
             <Text color="gray">
-              {showInspector ? '▼' : '▶'} [Dev Mode] Inspector (Press Ctrl+V to toggle)
+              {showInspector ? '▼' : '▶'} [Dev Mode] Inspector (Press Ctrl+O to toggle)
             </Text>
             {showInspector && debugLogs.length > 0 && (
               <Box borderStyle="round" borderColor="gray" flexDirection="column" paddingX={1} marginTop={1}>
