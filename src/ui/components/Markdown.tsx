@@ -1,10 +1,19 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import { marked } from 'marked';
+import { marked, Token } from 'marked';
 
 interface MarkdownProps {
   children: string;
 }
+
+// Utility to recursively extract raw text from tokens
+const extractText = (tokens: Token[] = []): string => {
+  return tokens.reduce((acc, token) => {
+    if ('text' in token) return acc + token.text;
+    if ('tokens' in token && token.tokens) return acc + extractText(token.tokens);
+    return acc + token.raw;
+  }, '');
+};
 
 /**
  * A lightweight, custom Markdown renderer for Ink.
@@ -21,14 +30,14 @@ export const Markdown: React.FC<MarkdownProps> = ({ children }) => {
         return (
           <Box key={index} marginBottom={1} marginTop={1}>
             <Text bold color="cyan">
-              {`${'#'.repeat(token.depth)} ${token.text}`}
+              {`${'#'.repeat(token.depth)} ${extractText(token.tokens || [])}`}
             </Text>
           </Box>
         );
       case 'paragraph':
         return (
           <Box key={index} marginBottom={1}>
-            <Text>{token.text}</Text>
+            <Text>{extractText(token.tokens || [])}</Text>
           </Box>
         );
       case 'list':
@@ -37,7 +46,7 @@ export const Markdown: React.FC<MarkdownProps> = ({ children }) => {
             {token.items.map((item: any, i: number) => (
               <Box key={i}>
                 <Text color="yellow"> • </Text>
-                <Text>{item.text}</Text>
+                <Text>{extractText(item.tokens || [])}</Text>
               </Box>
             ))}
           </Box>
@@ -52,7 +61,6 @@ export const Markdown: React.FC<MarkdownProps> = ({ children }) => {
         return null;
       default:
         // Fallback for unsupported markdown types (tables, blockquotes, etc.)
-        // Just render the raw text so we don't lose data.
         if (token.raw) {
           return (
             <Box key={index}>

@@ -168,7 +168,7 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
 
       <Box flexDirection="column">
         {/* Active Processing Area (The Diorama & Live Stream) */}
-        {isProcessing && (
+        {(appState === 'thinking' || appState === 'working') && (
           <Box flexDirection="column" borderStyle="round" borderColor={appState === 'working' ? 'yellow' : 'cyan'} paddingX={2} marginY={1}>
             <Box alignItems="center">
               <Box marginRight={2}>
@@ -185,7 +185,7 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
         )}
 
         {/* Input Area (Idle / Success / Error) */}
-        {!isProcessing && (
+        {(appState === 'idle' || appState === 'success' || appState === 'error') && (
           <Box marginTop={1}>
             <Box marginRight={1}>
               <Text color={appState === 'success' ? 'green' : appState === 'error' ? 'red' : 'blue'}>
