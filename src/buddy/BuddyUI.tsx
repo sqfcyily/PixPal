@@ -47,27 +47,27 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[], skillInst
   
   const isProcessing = appState === 'thinking' || appState === 'working';
 
-  // ✨ Cute Cyber Spark (Data Sprite) Animation Dictionary
+  // 🐾 Cute Line-Art Cat Animation Dictionary
   const robotFrames: Record<RobotState, string[]> = {
     idle: [
-      "   / \\   \n { o_o } \n   \\ /   ",
-      "   / \\   \n { -_- } \n   \\ /   "
+      "  /\\_/\\  \n ( o.o ) \n  > ^ <  ",
+      "  /\\_/\\  \n ( -.- ) \n  > ^ <  "
     ],
     thinking: [
-      "   / \\ 💡\n { •_o } \n   \\ /   ",
-      "   / \\   \n { o_• }💡\n   \\ /   "
+      "  /\\_/\\ 💡\n ( o.- ) \n  > ^ <  ",
+      "  /\\_/\\  \n ( o.- )💡\n  > ^ <  "
     ],
     working: [
-      "   / \\ ⚡\n { >_< } \n   \\ /   ",
-      "   / \\   \n { >_< }⚡\n   \\ /   "
+      "  /\\_/\\ ⚡\n ( >.< ) \n  > ^ <  ",
+      "  /\\_/\\  \n ( >_< )⚡\n  > ^ <  "
     ],
     success: [
-      "   / \\ ✨\n { ^_^ } \n   \\ /   ",
-      "   / \\   \n { ^o^ }✨\n   \\ /   "
+      "  /\\_/\\ ✨\n ( ^.^ ) \n  > ^ <  ",
+      "  /\\_/\\  \n ( ^O^ )✨\n  \\ ^ /  "
     ],
     error: [
-      "   / \\ 💧\n { x_x } \n   \\ /   ",
-      "   / \\   \n { X_X }💧\n   \\ /   "
+      "  /\\_/\\ 💧\n ( x.x ) \n  > ~ <  ",
+      "  /\\_/\\  \n ( X.X )💧\n  > ~ <  "
     ]
   };
 
