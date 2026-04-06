@@ -18,6 +18,7 @@ export class BuddyUI {
 
   async connect(): Promise<void> {
     console.clear();
+    console.log('\x1b[35m✨ PixPal Terminal Initialized. Type \'exit\' to quit.\x1b[0m\n');
     const { waitUntilExit } = render(<PixPalApp config={this.config} tools={this.tools} skillInstructions={this.skillInstructions} />);
     await waitUntilExit();
   }
@@ -129,10 +130,6 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[], skillInst
 
   return (
     <>
-      <Box marginBottom={1}>
-        <Text bold color="magenta">✨ PixPal Terminal Initialized. Type 'exit' to quit.</Text>
-      </Box>
-
       {/* Claude Code Style History */}
       <Static items={history}>
         {(msg, index) => (
