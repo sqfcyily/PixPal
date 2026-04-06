@@ -1,4 +1,4 @@
-import { getConfiguration } from './config/index.js';
+import { getConfiguration, saveConfiguration } from './config/index.js';
 import { runChatCommand } from './commands/chat.js';
 import * as readline from 'readline';
 
@@ -11,15 +11,12 @@ async function main() {
   let config = getConfiguration();
 
   if (!config.apiKey) {
-    console.log('🔗 Enter BASE_URL (e.g. https://api.openai.com/v1):');
-    const baseUrl = await askQuestion('> ');
-    console.log('🤖 Enter MODEL_NAME (e.g. gpt-4o):');
-    const modelName = await askQuestion('> ');
-    console.log('🔑 Enter API_KEY:');
-    const apiKey = await askQuestion('> ');
+    console.log('✨ Welcome to PixPal! Let\'s set up your agent.\n');
+    const baseUrl = await askQuestion('🔗 Enter BASE_URL (e.g. https://api.openai.com/v1): ');
+    const modelName = await askQuestion('🤖 Enter MODEL_NAME (e.g. gpt-4o): ');
+    const apiKey = await askQuestion('🔑 Enter API_KEY: ');
 
-    const fs = await import('fs');
-    fs.writeFileSync('.agentrc', JSON.stringify({ BASE_URL: baseUrl, MODEL_NAME: modelName, API_KEY: apiKey }, null, 2));
+    saveConfiguration(baseUrl, modelName, apiKey);
     config = getConfiguration();
   }
 
