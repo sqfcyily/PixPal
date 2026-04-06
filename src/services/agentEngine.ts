@@ -1,5 +1,5 @@
-import { fetchStream, LLMConfig } from './llm.js';
-import type { Message, EngineEvent, ToolSchema, ToolCall } from './types.js';
+import { fetchStream, LLMConfig } from './llmClient.js';
+import type { Message, EngineEvent, ToolSchema, ToolCall } from '../utils/types.js';
 import { runTool } from '../tools/index.js';
 
 export interface EngineConfig extends LLMConfig {

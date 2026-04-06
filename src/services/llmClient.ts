@@ -1,4 +1,4 @@
-import type { Message, ToolSchema } from './types';
+import type { Message, ToolSchema } from '../utils/types.js';
 
 // Core dependencies for network requests
 export interface LLMConfig {

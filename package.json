@@ -2,12 +2,12 @@
   "name": "pixpal",
   "version": "0.1.0",
   "description": "An ultra-lightweight, pixel-art visualized personal AI assistant",
-  "main": "src/index.ts",
+  "main": "src/main.tsx",
   "type": "module",
   "scripts": {
-    "start": "bun run src/index.ts",
-    "dev": "bun run --watch src/index.ts",
-    "build": "bun build src/index.ts --compile --outfile pixpal"
+    "start": "bun run src/main.tsx",
+    "dev": "bun run --watch src/main.tsx",
+    "build": "bun build src/main.tsx --compile --outfile pixpal"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

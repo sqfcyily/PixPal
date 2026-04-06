@@ -1,40 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { render, Box, Text, Static } from 'ink';
 import TextInput from 'ink-text-input';
-import { Markdown } from '../../ui/components/Markdown.js';
-import { runEngine, EngineConfig } from '../../core/engine.js';
-import type { Channel } from '../base.js';
-import type { EngineEvent, Message, ToolSchema } from '../../core/types.js';
+import { Markdown } from '../components/Markdown.js';
+import { runEngine, EngineConfig } from '../services/agentEngine.js';
+import type { EngineEvent, Message, ToolSchema } from '../utils/types.js';
 
-export class CLIChannel implements Channel {
+export class BuddyUI {
   private config: EngineConfig;
   private tools: ToolSchema[];
+  private skillInstructions: string;
 
-  constructor(config: EngineConfig, tools: ToolSchema[]) {
+  constructor(config: EngineConfig, tools: ToolSchema[], skillInstructions: string) {
     this.config = config;
     this.tools = tools;
+    this.skillInstructions = skillInstructions;
   }
 
   async connect(): Promise<void> {
     console.clear();
-    const { waitUntilExit } = render(<PixPalApp config={this.config} tools={this.tools} />);
+    const { waitUntilExit } = render(<PixPalApp config={this.config} tools={this.tools} skillInstructions={this.skillInstructions} />);
     await waitUntilExit();
   }
-
-  onMessage() {}
-  async sendMessage() { return ''; }
-  async updateMessage() {}
-  async renderEngineStream() {}
 }
 
 // ---------------------------------------------------------
-// React Root for the CLI Channel
+// React Root for the Buddy Channel
 // ---------------------------------------------------------
 type RobotState = 'idle' | 'thinking' | 'working' | 'success' | 'error';
 
-const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ config, tools }) => {
+const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[], skillInstructions: string }> = ({ config, tools, skillInstructions }) => {
+  const initialSystemPrompt = `You are PixPal, a helpful pixel-art assistant. Always use tools when necessary. Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
+  
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'system', content: `You are PixPal, a helpful pixel-art assistant. Always use tools when necessary. Language preference: ${config.language || 'en-US'}.` }
+    { role: 'system', content: initialSystemPrompt }
   ]);
   
   const [history, setHistory] = useState<Message[]>([]);
@@ -50,26 +48,11 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
 
   // 🤖 Emotion & Animation Dictionary
   const robotFrames: Record<RobotState, string[]> = {
-    idle: [
-      " ▄▀▀▄ \n █--█ \n ▀▄▄▀ ", // Waiting (Blinking)
-      " ▄▀▀▄ \n █oo█ \n ▀▄▄▀ "  // Waiting (Eyes open)
-    ],
-    thinking: [
-      " ▄▀▀▄ \n █··█ \n ▀▄▄▀ ", // Thinking (Looking left)
-      " ▄▀▀▄ \n █••█ \n ▀▄▄▀ "  // Thinking (Looking right)
-    ],
-    working: [
-      " ▄▀▀▄ \n █><█ \n ▀▄▄▀ ", // Working hard (Straining)
-      " ▄▀▀▄ \n █><█ \n ▀▄▄▀ "
-    ],
-    success: [
-      " ▄▀▀▄ \n █^^█ \n ▀▄▄▀ ", // Happy / Success
-      " ▄▀▀▄ \n █^^█ \n ▀▄▄▀ "
-    ],
-    error: [
-      " ▄▀▀▄ \n █xx█ \n ▀▄▄▀ ", // Dead / Error
-      " ▄▀▀▄ \n █XX█ \n ▀▄▄▀ "
-    ]
+    idle: [" ▄▀▀▄ \n █--█ \n ▀▄▄▀ ", " ▄▀▀▄ \n █oo█ \n ▀▄▄▀ "],
+    thinking: [" ▄▀▀▄ \n █··█ \n ▀▄▄▀ ", " ▄▀▀▄ \n █••█ \n ▀▄▄▀ "],
+    working: [" ▄▀▀▄ \n █><█ \n ▀▄▄▀ ", " ▄▀▀▄ \n █><█ \n ▀▄▄▀ "],
+    success: [" ▄▀▀▄ \n █^^█ \n ▀▄▄▀ ", " ▄▀▀▄ \n █^^█ \n ▀▄▄▀ "],
+    error: [" ▄▀▀▄ \n █xx█ \n ▀▄▄▀ ", " ▄▀▀▄ \n █XX█ \n ▀▄▄▀ "]
   };
 
   useEffect(() => {
@@ -119,7 +102,6 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
             setHistory(prev => [...prev, { role: 'assistant', content: event.content }]);
             setCurrentStream('');
             
-            // Brief success celebration before going back to idle
             setAppState('success');
             setTimeout(() => setAppState('idle'), 2500);
             break;
@@ -129,7 +111,6 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
             setHistory(prev => [...prev, errorMsg]);
             setCurrentStream('');
             
-            // Show error state before resetting
             setAppState('error');
             setTimeout(() => setAppState('idle'), 3000);
             break;
@@ -148,7 +129,11 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
 
   return (
     <>
-      {/* Claude Code Style History (Using Static to flush completed items and prevent dynamic jump) */}
+      <Box marginBottom={1}>
+        <Text bold color="magenta">✨ PixPal Terminal Initialized. Type 'exit' to quit.</Text>
+      </Box>
+
+      {/* Claude Code Style History */}
       <Static items={history}>
         {(msg, index) => (
           <Box key={index} flexDirection="column" paddingY={0} marginTop={1}>
@@ -167,7 +152,7 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
       </Static>
 
       <Box flexDirection="column">
-        {/* Active Processing Area (The Diorama & Live Stream) */}
+        {/* Active Processing Area */}
         {(appState === 'thinking' || appState === 'working') && (
           <Box flexDirection="column" borderStyle="round" borderColor={appState === 'working' ? 'yellow' : 'cyan'} paddingX={2} marginY={1}>
             <Box alignItems="center">
@@ -184,7 +169,7 @@ const PixPalApp: React.FC<{ config: EngineConfig, tools: ToolSchema[] }> = ({ co
           </Box>
         )}
 
-        {/* Input Area (Idle / Success / Error) */}
+        {/* Input Area */}
         {(appState === 'idle' || appState === 'success' || appState === 'error') && (
           <Box marginTop={1}>
             <Box marginRight={1}>
