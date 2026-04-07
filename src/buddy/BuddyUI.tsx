@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { render, Box, Text, Static, useInput, useApp } from 'ink';
+import * as fs from 'fs';
+import * as path from 'path';
 import TextInput from 'ink-text-input';
 import { Markdown } from '../components/Markdown.js';
 import { runEngine, EngineConfig } from '../services/agentEngine.js';
@@ -48,15 +50,15 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
   const [currentStream, setCurrentStream] = useState('');
   const [frameIdx, setFrameIdx] = useState(0);
 
-  // Dev Mode & Inspector
-  const [isDevMenuOpen, setIsDevMenuOpen] = useState(false);
+  // We keep debugLogs in state in case we want to show a counter or indicator, but we will write to file.
   const [debugLogs, setDebugLogs] = useState<any[]>([]);
 
-  useInput((input, key) => {
-    if (key.escape && isDevMenuOpen) {
-      setIsDevMenuOpen(false);
+  useEffect(() => {
+    if (config.isDev) {
+      const logPath = path.join(process.cwd(), 'dev.log');
+      fs.writeFileSync(logPath, `=== LiteAgent Dev Session Started at ${new Date().toISOString()} ===\n`, 'utf-8');
     }
-  });
+  }, [config.isDev]);
 
   const isProcessing = appState === 'thinking' || appState === 'working';
 
@@ -95,11 +97,7 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
       return;
     }
     if (trimmed.toLowerCase() === '/dev') {
-      if (config.isDev) {
-        setIsDevMenuOpen(true);
-      } else {
-        setHistory(prev => [...prev, { role: 'assistant', content: '⚠️ Dev mode is not enabled. Restart with `npm run dev`.' }]);
-      }
+      setHistory(prev => [...prev, { role: 'assistant', content: 'ℹ️ Dev mode logs are now written to `dev.log` in your current directory. Use `tail -f dev.log` in another terminal to monitor.' }]);
       setInput('');
       return;
     }
@@ -121,10 +119,11 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
       for await (const event of stream) {
         switch (event.type) {
           case 'debug':
-            setDebugLogs(prev => {
-              const newLogs = [...prev, { event: event.event, data: event.data }];
-              return newLogs.slice(-20); // Keep last 20 for full screen
-            });
+            if (config.isDev) {
+              const logPath = path.join(process.cwd(), 'dev.log');
+              const logEntry = `[${new Date().toISOString()}] ${event.event === 'request' ? '↑ API Request' : '↓ API Response'} (Loop ${event.data.loop})\n${JSON.stringify(event.data, null, 2)}\n\n`;
+              fs.appendFileSync(logPath, logEntry, 'utf-8');
+            }
             break;
           case 'thinking':
             setAppState('thinking');
@@ -308,57 +307,36 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
           </Box>
         )}
 
-        {/* Dynamic Bottom Area: Dev Logs OR Input */}
-        {isDevMenuOpen ? (
-          <Box flexDirection="column" borderStyle="round" borderColor="yellow" marginY={1}>
-            <Box borderBottom={false} marginBottom={1} justifyContent="space-between">
-              <Text bold color="yellow">⚙️ Dev Logs Inspector (Recent)</Text>
-              <Text color="gray">esc to close</Text>
-            </Box>
-            {debugLogs.length === 0 ? (
-              <Text color="gray">No logs recorded yet...</Text>
-            ) : (
-              debugLogs.slice(-3).map((log, i) => (
-                <Box key={i} flexDirection="column" marginBottom={1}>
-                  <Text color={log.event === 'request' ? 'blue' : 'green'} bold>
-                    {log.event === 'request' ? '↑ API Request' : '↓ API Response'} (Loop {log.data.loop})
-                  </Text>
-                  <Text color="gray">{JSON.stringify(log.data).substring(0, 150)}{JSON.stringify(log.data).length > 150 ? '...' : ''}</Text>
-                </Box>
-              ))
-            )}
-          </Box>
-        ) : (
-          (appState === 'idle' || appState === 'success' || appState === 'error') && (
-            <Box flexDirection="column" borderTop={true} borderStyle="single" borderColor="gray" paddingX={1} paddingTop={1}>
-              {/* Status Bar */}
-              <Box marginBottom={1} justifyContent="space-between">
-                <Box>
-                  <Text color="cyan">LiteAgent (CLI)</Text>
-                  <Text color="gray"> · {config.model} · {process.cwd()}</Text>
-                </Box>
-                <Box>
-                  <Text color="gray">ctrl+c exit</Text>
-                </Box>
-              </Box>
-
-              {/* Input Area */}
+        {/* Input Area (Always rendered at the bottom) */}
+        {(appState === 'idle' || appState === 'success' || appState === 'error') && (
+          <Box flexDirection="column" borderTop={true} borderStyle="single" borderColor="gray" paddingX={1} paddingTop={1}>
+            {/* Status Bar */}
+            <Box marginBottom={1} justifyContent="space-between">
               <Box>
-                <Box marginRight={1}>
-                  <Text color={appState === 'error' ? 'red' : 'cyan'}>▐</Text>
-                </Box>
-                <Box flexGrow={1}>
-                  {/* @ts-ignore */}
-                  <TextInput 
-                    value={input} 
-                    onChange={setInput} 
-                    onSubmit={handleSubmit} 
-                    placeholder="Type a message or /dev for logs..." 
-                  />
-                </Box>
+                <Text color="cyan">LiteAgent (CLI)</Text>
+                <Text color="gray"> · {config.model} · {process.cwd()}</Text>
+              </Box>
+              <Box>
+                <Text color="gray">ctrl+c exit</Text>
               </Box>
             </Box>
-          )
+
+            {/* Input Field */}
+            <Box>
+              <Box marginRight={1}>
+                <Text color={appState === 'error' ? 'red' : 'cyan'}>▐</Text>
+              </Box>
+              <Box flexGrow={1}>
+                {/* @ts-ignore */}
+                <TextInput 
+                  value={input} 
+                  onChange={setInput} 
+                  onSubmit={handleSubmit} 
+                  placeholder="Type a message... (Logs are in dev.log)" 
+                />
+              </Box>
+            </Box>
+          </Box>
         )}
       </Box>
     </>
