@@ -10,7 +10,9 @@
   "scripts": {
     "start": "bun run src/main.tsx",
     "dev": "bun run --watch src/main.tsx --dev",
-    "build": "bun build src/main.tsx --compile --outfile liteagent"
+    "build": "bun build src/main.tsx --compile --outfile liteagent",
+    "global:link": "bun link",
+    "global:unlink": "bun unlink"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
