@@ -222,17 +222,12 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
             {msg.role === 'tool' && (
               <Box paddingLeft={2} flexDirection="column" borderLeft={true} borderStyle="single" borderColor="yellow">
                 <Text color="yellow">⚙️  Calling Tool: <Text bold>{msg.toolName}</Text></Text>
-                <Text color="gray">{msg.args}</Text>
               </Box>
             )}
 
             {msg.role === 'tool_result' && (
               <Box paddingLeft={2} flexDirection="column" borderLeft={true} borderStyle="single" borderColor="green">
-                <Text color="green">✓  Result: <Text bold>{msg.toolName}</Text></Text>
-                <Text color="gray">
-                  {msg.result.substring(0, 300)}
-                  {msg.result.length > 300 ? '...\n(truncated)' : ''}
-                </Text>
+                <Text color="green">✓  Tool Result: <Text bold>{msg.toolName}</Text></Text>
               </Box>
             )}
           </Box>
