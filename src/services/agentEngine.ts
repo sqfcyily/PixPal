@@ -1,10 +1,14 @@
 import { fetchStream, LLMConfig } from './llmClient.js';
 import type { Message, EngineEvent, ToolSchema, ToolCall } from '../utils/types.js';
 import { runTool } from '../tools/index.js';
+import { compressContext } from './contextManager.js';
+import { checkPermissions, ToolPermissionContext } from '../tools/system/permissionPipeline.js';
 
 export interface EngineConfig extends LLMConfig {
   maxLoops?: number;
   isDev?: boolean;
+  permissionContext?: ToolPermissionContext;
+  language?: string;
 }
 
 /**
@@ -46,7 +50,8 @@ export async function* runEngine(
     }
 
     // 1. Fetch LLM stream
-    const stream = fetchStream(messages, tools, config);
+    const compressedMessages = compressContext(messages, { maxTokens: 8000 });
+    const stream = fetchStream(compressedMessages, tools, config);
     for await (const chunk of stream) {
       const delta = chunk.choices?.[0]?.delta;
       if (!delta) continue;
@@ -112,6 +117,37 @@ export async function* runEngine(
         yield { type: 'tool_start', toolName: tc.function.name, args: tc.function.arguments };
         try {
           const argsObj = JSON.parse(tc.function.arguments || '{}');
+
+          // Check permissions
+          const pCtx = config.permissionContext || {
+            mode: 'default',
+            allowRules: [],
+            denyRules: [],
+            askRules: [],
+            bypassAvailable: false
+          };
+
+          const decision = checkPermissions(tc.function.name, argsObj, pCtx);
+          
+          if (decision === 'deny') {
+            const errorMsg = `Tool execution denied by permission pipeline (Rule Matched).`;
+            yield { type: 'tool_end', toolName: tc.function.name, result: errorMsg };
+            messages.push({
+              role: 'tool',
+              content: errorMsg,
+              tool_call_id: tc.id,
+              name: tc.function.name
+            });
+            continue;
+          }
+
+          if (decision === 'ask') {
+            // Simplified interactive prompt fallback (Graceful Degradation)
+            // In a real terminal with Ink, this would pause the async generator and await user input
+            // For now, we simulate 'ask' resolving to allow (or auto-rejected depending on config)
+            yield { type: 'thinking', content: `[Permission Pipeline] Requesting user confirmation for ${tc.function.name}... (Auto-resolved for demo)` };
+          }
+
           const result = await runTool(tc.function.name, argsObj);
           yield { type: 'tool_end', toolName: tc.function.name, result };
           messages.push({

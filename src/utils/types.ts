@@ -2,7 +2,7 @@ export type Role = 'system' | 'user' | 'assistant' | 'tool';
 
 export interface Message {
   role: Role;
-  content: string;
+  content?: string;
   name?: string;
   tool_calls?: ToolCall[];
   tool_call_id?: string;
