@@ -2,15 +2,19 @@
   "name": "liteagent",
   "version": "0.1.0",
   "description": "A lightweight, general-purpose AI agent harness",
-  "main": "src/main.tsx",
+  "main": "dist/main.js",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "bin": {
-    "liteagent": "src/main.tsx"
+    "liteagent": "dist/main.js"
   },
   "scripts": {
     "start": "bun run src/main.tsx",
     "dev": "bun run --watch src/main.tsx --dev",
-    "build": "bun build src/main.tsx --compile --outfile liteagent",
+    "build:bin": "bun build src/main.tsx --compile --outfile liteagent",
+    "build:npm": "bun build src/main.tsx --target=node --outdir=dist --format=esm --sourcemap=external",
     "global:link": "bun link",
     "global:unlink": "bun unlink"
   },
@@ -20,9 +24,11 @@
     "ink-text-input": "^6.0.0",
     "marked": "^14.1.2",
     "react": "^18.2.0",
+    "react-devtools-core": "^7.0.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/node": "^20.0.0",
     "@types/react": "^18.2.79",
     "bun-types": "^1.3.11",
     "typescript": "^5.4.5"
