@@ -201,45 +201,58 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
       </Box>
 
       {/* 📜 Scrollable History via Static */}
-      <Static items={history}>
-        {(msg, index) => {
-          let mt = 1;
-          if (index > 0) {
-            const prevRole = history[index - 1].role;
-            const isPrevUser = prevRole === 'user';
-            const isCurrUser = msg.role === 'user';
-            // If we are switching turns between User and AI (assistant or tool), use a larger margin
-            if (isPrevUser !== isCurrUser) {
-              mt = 2;
+        <Static items={history}>
+          {(msg, index) => {
+            let mt = 0;
+            let showHeader = true;
+
+            if (index > 0) {
+              const prevRole = history[index - 1].role;
+              // Treat both 'assistant' and 'tool' as the AI's turn
+              const isPrevAI = prevRole === 'assistant' || prevRole === 'tool';
+              const isCurrAI = msg.role === 'assistant' || msg.role === 'tool';
+              const isPrevUser = prevRole === 'user';
+              const isCurrUser = msg.role === 'user';
+
+              if (isPrevUser !== isCurrUser) {
+                mt = 1; // 1 blank line between turns (which is mt=2 in CSS terms, but ink Box handles it differently)
+              }
+
+              // Hide the "■ LiteAgent" header if the AI is continuing its thought process
+              if (isPrevAI && isCurrAI) {
+                showHeader = false;
+              }
             }
-          }
 
-          return (
-            <Box key={index} flexDirection="column" marginTop={mt} marginBottom={0}>
-              {msg.role === 'user' && (
-                <>
-                  <Box marginBottom={1}><Text bold color="white">You</Text></Box>
-                  <Box paddingLeft={0}><Markdown>{msg.content}</Markdown></Box>
-                </>
-              )}
-              
-              {msg.role === 'assistant' && (
-                <>
-                  <Box marginBottom={1}><Text bold color="cyan">■ LiteAgent</Text></Box>
-                  <Box paddingLeft={2}><Markdown>{msg.content}</Markdown></Box>
-                </>
-              )}
+            return (
+              <Box key={index} flexDirection="column" marginTop={mt} marginBottom={0}>
+                {msg.role === 'user' && (
+                  <>
+                    <Box marginBottom={1}><Text bold color="white">You</Text></Box>
+                    <Box paddingLeft={0}><Markdown>{msg.content}</Markdown></Box>
+                  </>
+                )}
+                
+                {msg.role === 'assistant' && (
+                  <>
+                    {showHeader && <Box marginBottom={1}><Text bold color="cyan">■ LiteAgent</Text></Box>}
+                    <Box paddingLeft={2}><Markdown>{msg.content}</Markdown></Box>
+                  </>
+                )}
 
-              {msg.role === 'tool' && (
-                <Box paddingLeft={2} flexDirection="row">
-                  <Text color="yellow">⚙️  Calling Tool: </Text>
-                  <Text color="yellow" bold>{msg.toolName}</Text>
-                </Box>
-              )}
-            </Box>
-          );
-        }}
-      </Static>
+                {msg.role === 'tool' && (
+                  <>
+                    {showHeader && <Box marginBottom={1}><Text bold color="cyan">■ LiteAgent</Text></Box>}
+                    <Box paddingLeft={2} flexDirection="row">
+                      <Text color="yellow">⚙️  Calling Tool: </Text>
+                      <Text color="yellow" bold>{msg.toolName}</Text>
+                    </Box>
+                  </>
+                )}
+              </Box>
+            );
+          }}
+        </Static>
 
       <Box flexDirection="column">
         {/* Active Processing Area */}
