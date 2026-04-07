@@ -142,6 +142,8 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
             break;
           case 'thinking':
             setAppState('thinking');
+            // We no longer use statusText for the active processing area title, 
+            // but we update it just in case it's used elsewhere
             setStatusText('Thinking...');
             setCurrentStream(event.content);
             currentStreamRef.current = event.content;
@@ -159,6 +161,8 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
               newHist.push({ role: 'tool', toolName: event.toolName, args: event.args });
               return newHist;
             });
+            // We clear the stream so the Markdown block disappears,
+            // leaving only the "■ LiteAgent: Working..." header
             setCurrentStream('');
             currentStreamRef.current = '';
             break;
@@ -260,14 +264,13 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
                 
                 {msg.role === 'assistant' && (
                   <>
-                    {showHeader && <Box marginBottom={1}><Text bold color="cyan">■ LiteAgent</Text></Box>}
+                    {showHeader && <Box marginBottom={0}><Text bold color="cyan">■ LiteAgent: </Text></Box>}
                     <Box paddingLeft={2} marginBottom={0}><Markdown>{msg.content}</Markdown></Box>
                   </>
                 )}
 
                 {msg.role === 'tool' && (
                   <>
-                    {showHeader && <Box marginBottom={0}><Text bold color="cyan">■ LiteAgent</Text></Box>}
                     <Box paddingLeft={2} flexDirection="row">
                       <Text color="yellow">⚙️  Calling Tool: </Text>
                       <Text color="yellow" bold>{msg.toolName}</Text>
@@ -283,9 +286,10 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
         {/* Active Processing Area */}
         {(appState === 'thinking' || appState === 'working') && (
           <Box flexDirection="column" marginTop={1} paddingLeft={2} marginBottom={1}>
-            <Box>
+            <Box flexDirection="row">
+              <Text bold color="cyan">■ LiteAgent: </Text>
               <Text color="yellow" italic>
-                {appState === 'thinking' ? 'Thinking: ' : 'Working: '} {statusText}
+                {appState === 'thinking' ? 'Thinking... ' : 'Working... '}
               </Text>
             </Box>
             {currentStream.trim() ? (
@@ -299,18 +303,18 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
         {/* Finished Response Area (Waiting to be pushed to Static on next input) */}
         {appState === 'idle' && finishedResponse && (
           <Box flexDirection="column" marginTop={1} marginBottom={0}>
-            <Box marginBottom={1}><Text bold color="cyan">■ LiteAgent</Text></Box>
+            <Box marginBottom={0}><Text bold color="cyan">■ LiteAgent: </Text></Box>
             <Box paddingLeft={2}><Markdown>{finishedResponse}</Markdown></Box>
           </Box>
         )}
 
         {/* Input Area (Always rendered at the bottom) */}
         {(appState === 'idle' || appState === 'success' || appState === 'error') && (
-          <Box flexDirection="column" borderTop={true} borderStyle="single" borderColor="gray" paddingX={1} paddingTop={1}>
+          <Box flexDirection="column" borderTop={true} borderStyle="single" borderColor="gray" paddingX={1} paddingTop={0} paddingBottom={0}>
             {/* Status Bar */}
-            <Box marginBottom={1} justifyContent="space-between">
+            <Box marginBottom={0} justifyContent="space-between">
               <Box>
-                <Text backgroundColor="green" color="black" bold> LITE </Text>
+                <Text color="green" bold>LiteAgent</Text>
                 <Text color="gray"> │ {config.model} │ {process.cwd()}</Text>
               </Box>
               <Box>
