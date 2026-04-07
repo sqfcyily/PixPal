@@ -32,8 +32,7 @@ type AgentState = 'idle' | 'thinking' | 'working' | 'success' | 'error';
 
 type HistoryItem = 
   | { role: 'user' | 'assistant'; content: string }
-  | { role: 'tool'; toolName: string; args: string }
-  | { role: 'tool_result'; toolName: string; result: string };
+  | { role: 'tool'; toolName: string; args: string };
 
 const LiteAgentApp: React.FC<{ config: EngineConfig, tools: ToolSchema[], skillInstructions: string }> = ({ config, tools, skillInstructions }) => {
   const { exit } = useApp();
@@ -156,7 +155,6 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
           case 'tool_end':
             setAppState('thinking');
             setStatusText(`Tool [${event.toolName}] finished.`);
-            setHistory(prev => [...prev, { role: 'tool_result', toolName: event.toolName, result: event.result }]);
             break;
           case 'completed':
             setMessages(event.finalMessages);
@@ -204,37 +202,43 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
 
       {/* 📜 Scrollable History via Static */}
       <Static items={history}>
-        {(msg, index) => (
-          <Box key={index} flexDirection="column" marginTop={1} marginBottom={1}>
-            {msg.role === 'user' && (
-              <>
-                <Box marginBottom={1}><Text bold color="white">You</Text></Box>
-                <Box paddingLeft={0}><Markdown>{msg.content}</Markdown></Box>
-              </>
-            )}
-            
-            {msg.role === 'assistant' && (
-              <>
-                <Box marginBottom={1}><Text bold color="cyan">■ LiteAgent</Text></Box>
-                <Box paddingLeft={2}><Markdown>{msg.content}</Markdown></Box>
-              </>
-            )}
+        {(msg, index) => {
+          let mt = 1;
+          if (index > 0) {
+            const prevRole = history[index - 1].role;
+            const isPrevUser = prevRole === 'user';
+            const isCurrUser = msg.role === 'user';
+            // If we are switching turns between User and AI (assistant or tool), use a larger margin
+            if (isPrevUser !== isCurrUser) {
+              mt = 2;
+            }
+          }
 
-            {msg.role === 'tool' && (
-              <Box paddingLeft={2} flexDirection="row">
-                <Text color="yellow">⚙️  Calling Tool: </Text>
-                <Text color="yellow" bold>{msg.toolName}</Text>
-              </Box>
-            )}
+          return (
+            <Box key={index} flexDirection="column" marginTop={mt} marginBottom={0}>
+              {msg.role === 'user' && (
+                <>
+                  <Box marginBottom={1}><Text bold color="white">You</Text></Box>
+                  <Box paddingLeft={0}><Markdown>{msg.content}</Markdown></Box>
+                </>
+              )}
+              
+              {msg.role === 'assistant' && (
+                <>
+                  <Box marginBottom={1}><Text bold color="cyan">■ LiteAgent</Text></Box>
+                  <Box paddingLeft={2}><Markdown>{msg.content}</Markdown></Box>
+                </>
+              )}
 
-            {msg.role === 'tool_result' && (
-              <Box paddingLeft={2} flexDirection="row">
-                <Text color="green">✓  Tool Result: </Text>
-                <Text color="green" bold>{msg.toolName}</Text>
-              </Box>
-            )}
-          </Box>
-        )}
+              {msg.role === 'tool' && (
+                <Box paddingLeft={2} flexDirection="row">
+                  <Text color="yellow">⚙️  Calling Tool: </Text>
+                  <Text color="yellow" bold>{msg.toolName}</Text>
+                </Box>
+              )}
+            </Box>
+          );
+        }}
       </Static>
 
       <Box flexDirection="column">
