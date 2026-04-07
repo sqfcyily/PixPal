@@ -48,20 +48,12 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
   const [frameIdx, setFrameIdx] = useState(0);
 
   // Dev Mode & Inspector
-  const [showInspector, setShowInspector] = useState(false); // Default to collapsed so it doesn't clutter
+  const [isDevMenuOpen, setIsDevMenuOpen] = useState(false);
   const [debugLogs, setDebugLogs] = useState<any[]>([]);
 
   useInput((input, key) => {
-    // Ctrl+O for Open/Observe Inspector
-    if (key.ctrl && input === 'o') {
-      setShowInspector(prev => {
-        if (prev) {
-          // When closing a very large panel, Ink might leave ghost lines behind.
-          // Forcing a clear screen cleans up the canvas perfectly.
-          console.clear();
-        }
-        return !prev;
-      });
+    if (key.escape && isDevMenuOpen) {
+      setIsDevMenuOpen(false);
     }
   });
 
@@ -95,9 +87,19 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
   }, [isProcessing, config.isDev]);
 
   const handleSubmit = async (text: string) => {
-    if (!text.trim()) return;
-    if (text.trim().toLowerCase() === 'exit' || text.trim().toLowerCase() === 'quit') {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    if (trimmed.toLowerCase() === 'exit' || trimmed.toLowerCase() === 'quit') {
       process.exit(0);
+    }
+    if (trimmed.toLowerCase() === '/dev') {
+      if (config.isDev) {
+        setIsDevMenuOpen(true);
+      } else {
+        setHistory(prev => [...prev, { role: 'assistant', content: '⚠️ Dev mode is not enabled. Restart with `npm run dev`.' }]);
+      }
+      setInput('');
+      return;
     }
 
     const userMsg = { role: 'user' as const, content: text };
@@ -171,20 +173,24 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
 
   return (
     <>
-      {/* Claude Code Style History */}
+      {/* Scrollable History */}
       <Static items={history}>
         {(msg, index) => (
-          <Box key={index} flexDirection="column" paddingY={0} marginTop={1}>
-            <Text bold color={msg.role === 'user' ? 'blue' : 'green'}>
-              {msg.role === 'user' ? 'You:' : 'LiteAgent:'}
-            </Text>
-            {msg.role === 'user' ? (
-              <Text>{msg.content}</Text>
-            ) : (
-              <Box paddingLeft={2} flexDirection="column">
+          <Box key={index} flexDirection="column" marginTop={1} marginBottom={1}>
+            <Box marginBottom={1}>
+              {msg.role === 'user' ? (
+                <Text bold color="white">You</Text>
+              ) : (
+                <Text bold color="cyan">■ LiteAgent</Text>
+              )}
+            </Box>
+            <Box paddingLeft={msg.role === 'user' ? 0 : 2}>
+              {msg.role === 'assistant' || msg.role === 'user' ? (
                 <Markdown>{msg.content}</Markdown>
-              </Box>
-            )}
+              ) : (
+                <Text color="gray">{msg.content}</Text>
+              )}
+            </Box>
           </Box>
         )}
       </Static>
@@ -192,59 +198,67 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
       <Box flexDirection="column">
         {/* Active Processing Area */}
         {(appState === 'thinking' || appState === 'working') && (
-          <Box flexDirection="column" borderStyle="round" borderColor={appState === 'working' ? 'yellow' : 'cyan'} paddingX={2} marginY={1}>
-            <Box alignItems="center">
-              <Box marginRight={1}>
-                <Text bold color={appState === 'working' ? 'yellow' : 'cyan'}>
-                  {getStatusIcon()}
-                </Text>
-              </Box>
-              <Text color={appState === 'working' ? 'yellow' : 'cyan'}>{statusText}</Text>
-            </Box>
-            <Box marginTop={1}>
-              {currentStream.trim() ? <Markdown>{currentStream}</Markdown> : null}
-            </Box>
-          </Box>
-        )}
-
-        {/* Input Area */}
-        {(appState === 'idle' || appState === 'success' || appState === 'error') && (
-          <Box marginTop={1}>
-            <Box marginRight={1}>
-              <Text color={appState === 'success' ? 'green' : appState === 'error' ? 'red' : 'cyan'}>
-                {getStatusIcon()}
+          <Box flexDirection="column" marginTop={1} paddingLeft={2} marginBottom={1}>
+            <Box>
+              <Text color="yellow" italic>
+                {appState === 'thinking' ? 'Thinking: ' : 'Working: '} {statusText}
               </Text>
             </Box>
-            <Box flexDirection="column" justifyContent="center">
-              <Box>
-                <Text bold color="yellow"> {'> '} </Text>
-                {/* @ts-ignore */}
-                <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} />
+            {currentStream.trim() ? (
+              <Box marginTop={1}>
+                <Markdown>{currentStream}</Markdown>
               </Box>
-            </Box>
+            ) : null}
           </Box>
         )}
 
-        {/* Dev Inspector Panel */}
-        {config.isDev && (
-          <Box marginTop={1} flexDirection="column">
-            <Text color="gray">
-              {showInspector ? '▼' : '▶'} [Dev Mode] Inspector (Press Ctrl+O to toggle)
-            </Text>
-            {showInspector && debugLogs.length > 0 && (
-              <Box borderStyle="round" borderColor="gray" flexDirection="column" paddingX={1} marginTop={1}>
-                {debugLogs.map((log, i) => (
-                  <Box key={i} flexDirection="column" marginBottom={1}>
-                    <Text color="cyan" bold>
-                      {log.event === 'request' ? '📤 API Request' : '📥 API Response'} (Loop {log.data.loop})
-                    </Text>
-                    <Text color="gray">{JSON.stringify(log.data, null, 2)}</Text>
-                  </Box>
-                ))}
-              </Box>
+        {/* Dev Logs Popup (OpenCode Style) */}
+        {isDevMenuOpen && (
+          <Box borderStyle="single" borderColor="yellow" flexDirection="column" paddingX={2} paddingY={1} marginY={1}>
+            <Box borderBottom={false} marginBottom={1} justifyContent="space-between">
+              <Text bold color="yellow">Select / View Dev Logs</Text>
+              <Text color="gray">esc</Text>
+            </Box>
+            {debugLogs.length === 0 ? (
+              <Text color="gray">No logs recorded yet...</Text>
+            ) : (
+              debugLogs.map((log, i) => (
+                <Box key={i} flexDirection="column" marginBottom={1}>
+                  <Text color={log.event === 'request' ? 'blue' : 'green'} bold>
+                    {log.event === 'request' ? '↑ API Request' : '↓ API Response'} (Loop {log.data.loop})
+                  </Text>
+                  <Text color="gray">{JSON.stringify(log.data).substring(0, 500)}{JSON.stringify(log.data).length > 500 ? '...' : ''}</Text>
+                </Box>
+              ))
             )}
           </Box>
         )}
+
+        {/* Input Area (Always at bottom) */}
+        {(appState === 'idle' || appState === 'success' || appState === 'error') && (
+          <Box flexDirection="column" marginTop={isDevMenuOpen ? 0 : 1}>
+            <Box>
+              <Box marginRight={1}>
+                <Text color={appState === 'error' ? 'red' : 'cyan'}>▐</Text>
+              </Box>
+              <Box flexGrow={1}>
+                {/* @ts-ignore */}
+                <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} placeholder={isDevMenuOpen ? "Press ESC to close Dev Logs..." : "Type a message or /dev for logs..."} />
+              </Box>
+            </Box>
+          </Box>
+        )}
+        
+        {/* Status Bar */}
+        <Box marginTop={1} justifyContent="space-between">
+          <Box>
+            <Text color="cyan">LiteAgent (CLI)</Text>
+            <Text color="gray"> · {config.model} · {process.cwd()}</Text>
+          </Box>
+          <Box>
+            <Text color="gray">ctrl+c exit</Text>
+          </Box>
+        </Box>
       </Box>
     </>
   );
