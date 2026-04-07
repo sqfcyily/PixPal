@@ -52,7 +52,6 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
   
   // Advanced State Tracking
   const [appState, setAppState] = useState<AgentState>('idle');
-  const [statusText, setStatusText] = useState('Ready');
   const [currentStream, setCurrentStream] = useState('');
   const currentStreamRef = useRef(''); // Use ref to safely flush in async loop
   const [finishedResponse, setFinishedResponse] = useState<string | null>(null);
@@ -124,7 +123,6 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
     
     setInput('');
     setAppState('thinking');
-    setStatusText('Thinking...');
     setCurrentStream('');
     setFinishedResponse(null);
     setDebugLogs([]); // Clear logs for new turn
@@ -142,15 +140,11 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
             break;
           case 'thinking':
             setAppState('thinking');
-            // We no longer use statusText for the active processing area title, 
-            // but we update it just in case it's used elsewhere
-            setStatusText('Thinking...');
             setCurrentStream(event.content);
             currentStreamRef.current = event.content;
             break;
           case 'tool_start':
             setAppState('working');
-            setStatusText(`Executing Tool [${event.toolName}]...`);
             // 💡 Flush the "thought process" before the tool execution into history
             setHistory(prev => {
               const newHist = [...prev];
@@ -168,7 +162,6 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
             break;
           case 'tool_end':
             setAppState('thinking');
-            setStatusText(`Tool [${event.toolName}] finished.`);
             break;
           case 'completed':
             setMessages(event.finalMessages);
@@ -181,7 +174,6 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
             
             // Go straight to idle to instantly remove the "Thinking..." block from the screen.
             setAppState('idle');
-            setStatusText('Ready');
             break;
           case 'error':
             const errorMsg = { role: 'assistant' as const, content: `❌ Error: ${event.error.message}` };
@@ -246,7 +238,7 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
                 if (msg.role === 'assistant' && prevRole === 'tool') {
                   mt = 1; 
                 } else if (msg.role === 'assistant' && prevRole === 'assistant') {
-                  mt = 1;
+                  mt = 0; // Compress consecutive assistant blocks
                 } else if (msg.role === 'tool') {
                   mt = 0; // Tool call directly under the thinking block
                 }
@@ -285,7 +277,7 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
       <Box flexDirection="column">
         {/* Active Processing Area */}
         {(appState === 'thinking' || appState === 'working') && (
-          <Box flexDirection="column" marginTop={1} paddingLeft={2} marginBottom={1}>
+          <Box flexDirection="column" marginTop={1} paddingLeft={0} marginBottom={1}>
             <Box flexDirection="row">
               <Text bold color="cyan">■ LiteAgent: </Text>
               <Text color="yellow" italic>
@@ -293,7 +285,7 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
               </Text>
             </Box>
             {currentStream.trim() ? (
-              <Box marginTop={0} paddingLeft={2}>
+              <Box marginTop={0} paddingLeft={4}>
                 <Markdown>{currentStream}</Markdown>
               </Box>
             ) : null}
