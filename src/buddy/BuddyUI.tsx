@@ -55,6 +55,7 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
   useInput((input, key) => {
     if (key.escape && isDevMenuOpen) {
       setIsDevMenuOpen(false);
+      console.clear(); // Fix ghosting when modal closes
     }
   });
 
@@ -220,7 +221,7 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
           </Box>
         )}
 
-        {/* 🛠️ Dev Logs Popup (Modal Style Overlaying Input) */}
+        {/* 🛠️ Dev Logs Popup (Compact Modal Style Overlaying Input) */}
         {isDevMenuOpen && (
           <Box 
             borderStyle="round" 
@@ -233,18 +234,18 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
             alignSelf="center"
           >
             <Box borderBottom={false} marginBottom={1} justifyContent="space-between">
-              <Text bold color="yellow">⚙️ Dev Logs Inspector</Text>
+              <Text bold color="yellow">⚙️ Dev Logs Inspector (Recent)</Text>
               <Text color="gray">esc to close</Text>
             </Box>
             {debugLogs.length === 0 ? (
               <Text color="gray">No logs recorded yet...</Text>
             ) : (
-              debugLogs.map((log, i) => (
+              debugLogs.slice(-3).map((log, i) => (
                 <Box key={i} flexDirection="column" marginBottom={1}>
                   <Text color={log.event === 'request' ? 'blue' : 'green'} bold>
                     {log.event === 'request' ? '↑ API Request' : '↓ API Response'} (Loop {log.data.loop})
                   </Text>
-                  <Text color="gray">{JSON.stringify(log.data).substring(0, 500)}{JSON.stringify(log.data).length > 500 ? '...' : ''}</Text>
+                  <Text color="gray">{JSON.stringify(log.data).substring(0, 200)}{JSON.stringify(log.data).length > 200 ? '...' : ''}</Text>
                 </Box>
               ))
             )}
