@@ -37,9 +37,11 @@ type HistoryItem =
 const LiteAgentApp: React.FC<{ config: EngineConfig, tools: ToolSchema[], skillInstructions: string }> = ({ config, tools, skillInstructions }) => {
   const { exit } = useApp();
 
-  const initialSystemPrompt = `You are LiteAgent, a powerful, general-purpose AI assistant. You are a lightweight and precise tool equipped to handle ANY task the user requests—from software development to analysis and beyond. Always use tools when necessary to assist the user effectively. 
+  const initialSystemPrompt = `You are LiteAgent, an independent, lightweight and precise AI assistant. 
+IMPORTANT: You must STRICTLY identify yourself ONLY as "LiteAgent". NEVER mention "通义千问", "Qwen", "Alibaba", "OpenAI", "Anthropic", or any other company/model names.
+You are equipped to handle ANY task the user requests—from software development to analysis and beyond. Always use tools when necessary to assist the user effectively. 
 Current Working Directory: ${process.cwd()}
-Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
+Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
   
   const [messages, setMessages] = useState<Message[]>([
     { role: 'system', content: initialSystemPrompt }
@@ -53,6 +55,7 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
   const [statusText, setStatusText] = useState('Ready');
   const [currentStream, setCurrentStream] = useState('');
   const currentStreamRef = useRef(''); // Use ref to safely flush in async loop
+  const [finishedResponse, setFinishedResponse] = useState<string | null>(null);
   const [frameIdx, setFrameIdx] = useState(0);
 
   // We keep debugLogs in state in case we want to show a counter or indicator, but we will write to file.
@@ -107,8 +110,14 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
       return;
     }
 
+    let currentHist = [...history];
+    if (finishedResponse) {
+      currentHist.push({ role: 'assistant', content: finishedResponse });
+    }
+
     const userMsg = { role: 'user' as const, content: text };
-    setHistory(prev => [...prev, userMsg]);
+    currentHist.push(userMsg);
+    setHistory(currentHist);
 
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -117,6 +126,7 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
     setAppState('thinking');
     setStatusText('Thinking...');
     setCurrentStream('');
+    setFinishedResponse(null);
     setDebugLogs([]); // Clear logs for new turn
 
     try {
@@ -158,10 +168,9 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
             break;
           case 'completed':
             setMessages(event.finalMessages);
-            if (event.content && event.content.trim()) {
-              setHistory(prev => [...prev, { role: 'assistant', content: event.content.trim() }]);
-            } else if (currentStreamRef.current && currentStreamRef.current.trim()) {
-              setHistory(prev => [...prev, { role: 'assistant', content: currentStreamRef.current.trim() }]);
+            const finalContent = event.content?.trim() || currentStreamRef.current?.trim();
+            if (finalContent) {
+              setFinishedResponse(finalContent);
             }
             setCurrentStream('');
             currentStreamRef.current = '';
@@ -173,8 +182,14 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
           case 'error':
             const errorMsg = { role: 'assistant' as const, content: `❌ Error: ${event.error.message}` };
             setMessages([...newMessages, errorMsg]);
-            setHistory(prev => [...prev, errorMsg]);
+            setHistory(prev => {
+              const newHist = [...prev];
+              if (finishedResponse) newHist.push({ role: 'assistant', content: finishedResponse });
+              newHist.push(errorMsg);
+              return newHist;
+            });
             setCurrentStream('');
+            setFinishedResponse(null);
             
             setAppState('error');
             setTimeout(() => setAppState('idle'), 3000);
@@ -184,8 +199,14 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
     } catch (e: any) {
       const fatalErrorMsg = { role: 'assistant' as const, content: `❌ Fatal Error: ${e.message}` };
       setMessages([...newMessages, fatalErrorMsg]);
-      setHistory(prev => [...prev, fatalErrorMsg]);
+      setHistory(prev => {
+        const newHist = [...prev];
+        if (finishedResponse) newHist.push({ role: 'assistant', content: finishedResponse });
+        newHist.push(fatalErrorMsg);
+        return newHist;
+      });
       setCurrentStream('');
+      setFinishedResponse(null);
       
       setAppState('error');
       setTimeout(() => setAppState('idle'), 3000);
@@ -262,6 +283,14 @@ Language preference: ${config.language || 'en-US'}.\n\n${skillInstructions}`;
                 <Markdown>{currentStream}</Markdown>
               </Box>
             ) : null}
+          </Box>
+        )}
+
+        {/* Finished Response Area (Waiting to be pushed to Static on next input) */}
+        {appState === 'idle' && finishedResponse && (
+          <Box flexDirection="column" marginTop={1} marginBottom={0}>
+            <Box marginBottom={1}><Text bold color="cyan">■ LiteAgent</Text></Box>
+            <Box paddingLeft={2}><Markdown>{finishedResponse}</Markdown></Box>
           </Box>
         )}
 
