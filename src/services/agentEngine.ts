@@ -28,7 +28,7 @@ export async function* runEngine(
 
   while (loops < maxLoops) {
     loops++;
-    yield { type: 'thinking', content: `Reasoning loop ${loops}...` };
+    // yield { type: 'thinking', content: `Reasoning loop ${loops}...` };
 
     let currentText = '';
     const currentToolCalls: Record<number, any> = {};
@@ -145,7 +145,7 @@ export async function* runEngine(
             // Simplified interactive prompt fallback (Graceful Degradation)
             // In a real terminal with Ink, this would pause the async generator and await user input
             // For now, we simulate 'ask' resolving to allow (or auto-rejected depending on config)
-            yield { type: 'thinking', content: `[Permission Pipeline] Requesting user confirmation for ${tc.function.name}... (Auto-resolved for demo)` };
+            // yield { type: 'thinking', content: `[Permission Pipeline] Requesting user confirmation for ${tc.function.name}... (Auto-resolved for demo)` };
           }
 
           const result = await runTool(tc.function.name, argsObj);

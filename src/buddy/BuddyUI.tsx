@@ -145,7 +145,11 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
               const newHist = [...prev];
               // Only push if there's actual thinking content before the tool call
               if (currentStreamRef.current && currentStreamRef.current.trim()) {
-                newHist.push({ role: 'assistant', content: currentStreamRef.current.trim() });
+                // Also ignore pushing if it is just "Reasoning loop X..."
+                const content = currentStreamRef.current.trim();
+                if (!content.startsWith('Reasoning loop ')) {
+                  newHist.push({ role: 'assistant', content });
+                }
               }
               newHist.push({ role: 'tool', toolName: event.toolName, args: event.args });
               return newHist;
@@ -161,7 +165,7 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
           case 'completed':
             setMessages(event.finalMessages);
             const finalContent = event.content?.trim() || currentStreamRef.current?.trim();
-            if (finalContent) {
+            if (finalContent && !finalContent.startsWith('Reasoning loop ')) {
               setHistory(prev => [...prev, { role: 'assistant', content: finalContent }]);
             }
             setCurrentStream('');
