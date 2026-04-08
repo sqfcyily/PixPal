@@ -1,5 +1,5 @@
 {
-  "name": "liteagent",
+  "name": "@sqfcy/liteagent",
   "version": "0.1.0",
   "description": "A lightweight, general-purpose AI agent harness",
   "main": "dist/main.js",
