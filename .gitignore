@@ -4,3 +4,4 @@
 .agentrc_bk
 package-lock.json
 *.log
+*.lock
