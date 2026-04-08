@@ -4,10 +4,20 @@ import * as path from 'path';
 import * as os from 'os';
 import { EngineConfig } from '../services/agentEngine.js';
 
-const GLOBAL_CONFIG_FILE = path.join(os.homedir(), '.liteagentrc');
+const GLOBAL_DIR = path.join(os.homedir(), '.liteagent');
+const GLOBAL_CONFIG_FILE = path.join(GLOBAL_DIR, '.agentrc');
+const OLD_GLOBAL_CONFIG_FILE = path.join(os.homedir(), '.liteagentrc');
 const LOCAL_CONFIG_FILE = '.agentrc';
 
 export function getConfiguration(): EngineConfig {
+  // Migrate old config if it exists
+  if (fs.existsSync(OLD_GLOBAL_CONFIG_FILE) && !fs.existsSync(GLOBAL_CONFIG_FILE)) {
+    if (!fs.existsSync(GLOBAL_DIR)) {
+      fs.mkdirSync(GLOBAL_DIR, { recursive: true });
+    }
+    fs.renameSync(OLD_GLOBAL_CONFIG_FILE, GLOBAL_CONFIG_FILE);
+  }
+
   // Load global config first
   if (fs.existsSync(GLOBAL_CONFIG_FILE)) {
     dotenv.config({ path: GLOBAL_CONFIG_FILE });
@@ -28,6 +38,16 @@ export function getConfiguration(): EngineConfig {
 
 export function saveConfiguration(baseUrl: string, modelName: string, apiKey: string): void {
   const configContent = `BASE_URL=${baseUrl || 'https://api.openai.com/v1'}\nMODEL_NAME=${modelName || 'gpt-4o'}\nAPI_KEY=${apiKey}\nLANGUAGE=en-US\n`;
+  
+  // Ensure the global directory and skill directory exist
+  if (!fs.existsSync(GLOBAL_DIR)) {
+    fs.mkdirSync(GLOBAL_DIR, { recursive: true });
+  }
+  const skillDir = path.join(GLOBAL_DIR, 'skill');
+  if (!fs.existsSync(skillDir)) {
+    fs.mkdirSync(skillDir, { recursive: true });
+  }
+
   // Always save to global config so it persists across directories
   fs.writeFileSync(GLOBAL_CONFIG_FILE, configContent, 'utf-8');
 }
