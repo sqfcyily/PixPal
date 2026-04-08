@@ -39,13 +39,13 @@ export function getConfiguration(): EngineConfig {
 export function saveConfiguration(baseUrl: string, modelName: string, apiKey: string): void {
   const configContent = `BASE_URL=${baseUrl || 'https://api.openai.com/v1'}\nMODEL_NAME=${modelName || 'gpt-4o'}\nAPI_KEY=${apiKey}\nLANGUAGE=en-US\n`;
   
-  // Ensure the global directory and skill directory exist
+  // Ensure the global directory and skills directory exist
   if (!fs.existsSync(GLOBAL_DIR)) {
     fs.mkdirSync(GLOBAL_DIR, { recursive: true });
   }
-  const skillDir = path.join(GLOBAL_DIR, 'skill');
-  if (!fs.existsSync(skillDir)) {
-    fs.mkdirSync(skillDir, { recursive: true });
+  const skillsDir = path.join(GLOBAL_DIR, 'skills');
+  if (!fs.existsSync(skillsDir)) {
+    fs.mkdirSync(skillsDir, { recursive: true });
   }
 
   // Always save to global config so it persists across directories

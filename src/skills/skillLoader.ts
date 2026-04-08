@@ -34,18 +34,20 @@ export async function loadSkills(): Promise<Skill[]> {
     });
   }
 
-  // Future expansion: read from ~/.liteagent/skill directory
-  const skillDir = path.join(globalDir, 'skill');
-  if (fs.existsSync(skillDir) && fs.statSync(skillDir).isDirectory()) {
-    const files = fs.readdirSync(skillDir);
-    for (const file of files) {
-      if (file.endsWith('.md') || file.endsWith('.txt')) {
-        const skillPath = path.join(skillDir, file);
-        const skillName = path.basename(file, path.extname(file));
-        skills.push({
-          name: `skill_${skillName}`,
-          instructions: fs.readFileSync(skillPath, 'utf-8')
-        });
+  // Future expansion: read from ~/.liteagent/skills directory
+  const skillsDir = path.join(globalDir, 'skills');
+  if (fs.existsSync(skillsDir) && fs.statSync(skillsDir).isDirectory()) {
+    const skillFolders = fs.readdirSync(skillsDir);
+    for (const folderName of skillFolders) {
+      const folderPath = path.join(skillsDir, folderName);
+      if (fs.statSync(folderPath).isDirectory()) {
+        const skillMdPath = path.join(folderPath, 'SKILL.md');
+        if (fs.existsSync(skillMdPath)) {
+          skills.push({
+            name: folderName,
+            instructions: fs.readFileSync(skillMdPath, 'utf-8')
+          });
+        }
       }
     }
   }
