@@ -60,6 +60,12 @@ export const Markdown: React.FC<MarkdownProps> = ({ children }) => {
         );
       case 'space':
         return null;
+      case 'em':
+        return (
+          <Text key={index} italic color="gray" dimColor>
+            {extractText(token.tokens || [])}
+          </Text>
+        );
       default:
         // Fallback for unsupported markdown types (tables, blockquotes, etc.)
         if (token.raw) {

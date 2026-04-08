@@ -148,7 +148,7 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
                 // Also ignore pushing if it is just "Reasoning loop X..."
                 const content = currentStreamRef.current.trim();
                 if (!content.startsWith('Reasoning loop ')) {
-                  newHist.push({ role: 'assistant', content });
+                  newHist.push({ role: 'assistant', content: `_Thought: ${content}_` });
                 }
               }
               newHist.push({ role: 'tool', toolName: event.toolName, args: event.args });
@@ -166,6 +166,7 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
             setMessages(event.finalMessages);
             const finalContent = event.content?.trim() || currentStreamRef.current?.trim();
             if (finalContent && !finalContent.startsWith('Reasoning loop ')) {
+              // Usually the final content is the actual answer, so we don't wrap it in 'Thought:'
               setHistory(prev => [...prev, { role: 'assistant', content: finalContent }]);
             }
             setCurrentStream('');
@@ -273,7 +274,9 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
             </Box>
             {currentStream.trim() ? (
               <Box marginTop={0} paddingLeft={2}>
-                <Markdown>{currentStream}</Markdown>
+                <Text color="gray" dimColor italic>
+                  {currentStream}
+                </Text>
               </Box>
             ) : null}
           </Box>
