@@ -192,8 +192,16 @@ Language preference: ${config.language || 'zh-CN'}.\n\n${skillInstructions}`;
               });
               
               // Usually the final content is the actual answer, so we don't wrap it in 'Thought:'
-              setFinishedResponse(finalContent);
+              if (finalContent.trim() !== '') {
+                setFinishedResponse(finalContent);
+              }
             }
+            // Explicitly clear finishedResponse if the LLM returned absolutely nothing at the end of the loop
+            // This prevents an empty "■ LiteAgent:" block from hanging in the UI
+            if (!finalContent || finalContent.trim() === '') {
+              setFinishedResponse(null);
+            }
+
             setCurrentStream('');
             currentStreamRef.current = '';
             
