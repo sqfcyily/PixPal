@@ -204,6 +204,12 @@ Language preference: ${currentConfig.language || 'zh-CN'}.\n\n${skillInstruction
             return;
           }
           if (selectedCmd === '/mode') {
+            let currentHist = [...history];
+            if (finishedResponse) {
+              currentHist.push({ role: 'assistant', content: finishedResponse });
+              setFinishedResponse(null);
+            }
+            setHistory(currentHist);
             setAvailableModels(getModels());
             setAppState('select_mode');
             return;
@@ -211,7 +217,14 @@ Language preference: ${currentConfig.language || 'zh-CN'}.\n\n${skillInstruction
           if (selectedCmd === '/dev') {
             const newDevMode = !currentConfig.isDev;
             setCurrentConfig(prev => ({ ...prev, isDev: newDevMode }));
-            setHistory(prev => [...prev, { role: 'assistant', content: newDevMode ? 'ℹ️ Dev mode logs are now written to `lite-agent-dev.log` in your current directory. Use `tail -f lite-agent-dev.log` in another terminal to monitor.' : 'ℹ️ Dev mode disabled.' }]);
+            
+            let currentHist = [...history];
+            if (finishedResponse) {
+              currentHist.push({ role: 'assistant', content: finishedResponse });
+              setFinishedResponse(null);
+            }
+            currentHist.push({ role: 'assistant', content: newDevMode ? 'ℹ️ Dev mode logs are now written to `lite-agent-dev.log` in your current directory. Use `tail -f lite-agent-dev.log` in another terminal to monitor.' : 'ℹ️ Dev mode disabled.' });
+            setHistory(currentHist);
             return;
           }
         }
@@ -233,11 +246,24 @@ Language preference: ${currentConfig.language || 'zh-CN'}.\n\n${skillInstruction
     if (trimmed.toLowerCase() === '/dev') {
       const newDevMode = !currentConfig.isDev;
       setCurrentConfig(prev => ({ ...prev, isDev: newDevMode }));
-      setHistory(prev => [...prev, { role: 'assistant', content: newDevMode ? 'ℹ️ Dev mode logs are now written to `lite-agent-dev.log` in your current directory. Use `tail -f lite-agent-dev.log` in another terminal to monitor.' : 'ℹ️ Dev mode disabled.' }]);
+      
+      let currentHist = [...history];
+      if (finishedResponse) {
+        currentHist.push({ role: 'assistant', content: finishedResponse });
+        setFinishedResponse(null);
+      }
+      currentHist.push({ role: 'assistant', content: newDevMode ? 'ℹ️ Dev mode logs are now written to `lite-agent-dev.log` in your current directory. Use `tail -f lite-agent-dev.log` in another terminal to monitor.' : 'ℹ️ Dev mode disabled.' });
+      setHistory(currentHist);
       setInput('');
       return;
     }
     if (trimmed.toLowerCase() === '/mode') {
+      let currentHist = [...history];
+      if (finishedResponse) {
+        currentHist.push({ role: 'assistant', content: finishedResponse });
+        setFinishedResponse(null);
+      }
+      setHistory(currentHist);
       setAvailableModels(getModels());
       setAppState('select_mode');
       setInput('');
