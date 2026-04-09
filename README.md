@@ -37,6 +37,7 @@ la
 
 **关于 Bun 的下载与使用（初学者指南）：**
 Bun 是一个极速的 JavaScript/TypeScript 运行时，内置了包管理器和打包工具，执行速度远超传统的 Node.js。
+
 - **macOS / Linux 安装**: 打开终端执行 `curl -fsSL https://bun.sh/install | bash`
 - **Windows 安装**: 打开 PowerShell 执行 `powershell -c "irm bun.sh/install.ps1 | iex"`（或通过 npm 安装：`npm install -g bun`）
 - **验证安装**: 运行 `bun --version` 确认安装成功。
@@ -55,7 +56,70 @@ bun install
 bun start
 ```
 
-*首次启动时，系统会引导你配置 `BASE_URL`、`MODEL_NAME` 和 `API_KEY`。*
+_首次启动时，系统会引导你配置 `BASE_URL`、`MODEL_NAME` 和 `API_KEY`。_
+
+### 📁 配置目录（安装后会自动创建）
+
+LiteAgent 默认会在用户主目录下创建全局配置目录，用于保存模型列表、全局配置以及 Skills。
+
+- **全局配置目录**：
+  - macOS / Linux：`~/.liteagent/`
+  - Windows：`%USERPROFILE%\.liteagent\`
+- **目录内容**（关键文件）：
+  - `.agentrc`：默认全局配置（BASE_URL、MODEL_NAME、API_KEY、LANGUAGE 等）
+  - `models.json`：模型注册表（`/mode` 菜单中的模型列表）
+  - `AGENT.md` / `SOUL.md`：可选的全局 Persona/行为约束（会被注入到系统提示词）
+  - `skills/`：技能目录（每个技能一个子目录）
+- **本地覆盖（可选）**：如果你在项目根目录放置 `.agentrc`，将会覆盖全局配置（用于项目级隔离）。
+
+### 🧩 如何添加 SKILL（自定义技能）
+
+LiteAgent 的 Skills 采用目录约定加载：每个技能对应 `~/.liteagent/skills/<skill-name>/SKILL.md`。
+
+**1) 创建技能目录与文件**
+
+以 `frontend-design` 为例：
+
+```bash
+mkdir -p ~/.liteagent/skills/frontend-design
+```
+
+然后创建：
+
+```text
+~/.liteagent/skills/frontend-design/SKILL.md
+```
+
+**2) 编写 SKILL.md（支持 YAML Frontmatter，可选）**
+
+`SKILL.md` 支持在文件顶部添加 YAML Frontmatter，用于描述技能元信息；正文部分为技能指令（会注入到模型上下文中）。
+
+示例：
+
+```md
+---
+description: "Create distinctive, production-grade frontend UI"
+arguments:
+  - "requirements"
+allowed-tools:
+  - "ReadFileTool"
+  - "WriteFileTool"
+  - "BashTool"
+context: "fork"
+---
+
+You are a senior frontend engineer...
+```
+
+- `description`：展示在 `/` 菜单的技能描述中
+- `arguments`：技能参数提示（字符串数组或空格分隔字符串）
+- `allowed-tools`：限定该技能允许调用的工具集合
+- `context`：`inline` 或 `fork`，用于控制技能在主对话上下文执行，还是在隔离的分支上下文中执行（适合复杂检索/试错）
+
+**3) 使用方式**
+
+- 启动 LiteAgent 后，在输入框键入 `/` 查看技能建议列表
+- 使用 `/<skill-name>` 调用技能，例如：`/frontend-design build a responsive header`
 
 ### 🔍 开发者模式（Dev Mode）与日志分析
 
@@ -69,32 +133,15 @@ bun start
 
 ---
 
-## 📂 项目目录说明
-
-```text
-LiteAgent/
-├── src/
-│   ├── buddy/            # React Ink 终端 UI 层（负责终端渲染、输入接管、配置向导）
-│   ├── commands/         # CLI 命令行入口解析
-│   ├── config/           # 配置文件读写与全局模型状态管理
-│   ├── mcp/              # Model Context Protocol (MCP) 客户端与工具集成
-│   ├── services/         # Agent 核心驱动层（包含 agentEngine 对话主循环）
-│   ├── skills/           # 动态 Skill 加载器（负责读取和解析自定义技能工作流）
-│   ├── tools/            # 内置系统工具实现（Bash执行、文件读写、权限校验等）
-│   └── main.tsx          # 应用程序主入口
-├── package.json          # 项目依赖与 NPM 脚本
-└── tsconfig.json         # TypeScript 编译配置
-```
-
----
-
 ## 🧠 核心架构与逻辑说明
 
 为了帮助初学者快速理解 Agent Harness 的运作原理，以下是本项目中四个最核心的技术设计：
 
 ### 1. 对话主循环 (Conversation Main Loop)
+
 Agent 的核心并非单次的一问一答，而是一个基于状态机的**循环系统**（位于 `src/services/agentEngine.ts`）。
 LiteAgent 采用了异步生成器（`async function*`）来驱动主循环：
+
 - 引擎向大模型发起流式请求，实时 yield 文本块供 UI 渲染。
 - 当大模型决定调用工具时（触发 `tool_calls`），引擎会挂起生成器，暂停文本输出。
 - 引擎在本地执行大模型指定的工具，获取结果（stdout/stderr）。
@@ -102,19 +149,25 @@ LiteAgent 采用了异步生成器（`async function*`）来驱动主循环：
 - 循环直至大模型判定任务完成，输出最终文本。
 
 ### 2. 工具调用 (Tool Invocation)
+
 工具是大模型与物理世界交互的手脚。LiteAgent 的工具系统（`src/tools/`）设计如下：
+
 - **Schema 定义**: 强制使用 `Zod` 定义工具的输入参数结构，大模型必须严格遵循此结构输出 JSON。
 - **并发与权限**: 框架层支持工具的并行执行校验，并在敏感工具（如执行 Shell 命令）调用前，通过权限管道拦截，确保系统安全。
 - **标准化接口**: 所有工具继承自统一的基类，开发者只需实现 `execute` 方法，即可轻松扩展自定义工具。
 
 ### 3. Skill 加载 (Skill Loading)
+
 为了避免系统提示词（System Prompt）过于臃肿导致 Token 浪费与指令漂移，LiteAgent 引入了动态 Skill 加载机制。
+
 - 框架会在启动时扫描特定目录下的技能定义（Markdown/YAML）。
 - 根据用户的当前输入意图，按需将相关的专家级工作流（Workflow）、规范和上下文注入到 System Prompt 中。
 - 这种模块化的提示词工程，使得一个轻量级 Agent 能够灵活地在“前端专家”、“运维工程师”等多种角色间无缝切换。
 
 ### 4. Fork 模式设计 (Fork Mode Design)
+
 在处理极其复杂的代码检索或试错性质的任务时，传统的单线对话会导致上下文迅速被垃圾信息填满（Context Pollution），进而引发 Token 爆炸和模型幻觉。
+
 - **分支探索**: 架构支持在当前对话节点“Fork”出一个隐形的子 Agent 进程。
 - **状态隔离**: 子 Agent 携带特定的目标（如：搜索某个 API 的具体用法），在独立且干净的上下文中大量调用搜索、读取工具进行试错。
 - **结果归并**: 当子 Agent 找到答案后，它会对探索过程进行摘要，并仅将**最终结论**返回给主进程。这不仅保护了主线对话的纯净性，也极大降低了长期运行的成本。
