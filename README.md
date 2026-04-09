@@ -17,15 +17,12 @@ LiteAgent 是一个轻量级的 AI Agent Harness（智能体运行时支架）CL
 
 LiteAgent 支持作为全局 NPM 包直接运行，也可以通过源码在本地构建运行。
 
-### 方式一：通过 NPM/NPX 直接运行（推荐）
+### 方式一：通过 NPM 直接运行（推荐）
 
-本项目已发布至 npmjs。如果你已经安装了 Node.js 环境，可以直接使用 `npx` 运行，或将其安装为全局命令：
+本项目已发布至 npmjs。如果你已经安装了 Node.js 环境，可以将其安装为全局命令：
 
 ```bash
-# 直接运行（无需安装）
-npx @sqfcy/liteagent
-
-# 或全局安装
+# 全局安装
 npm install -g @sqfcy/liteagent
 
 # 安装后，可通过以下命令启动
