@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { getConfiguration, saveConfiguration } from './config/index.js';
+import { getConfiguration, saveConfiguration, setActiveModel, getModels } from './config/index.js';
 import { runChatCommand } from './commands/chat.js';
 import { render } from 'ink';
 import React from 'react';
@@ -13,6 +13,9 @@ async function main() {
       const { unmount } = render(
         <SetupWizard onComplete={(baseUrl, modelName, apiKey) => {
           saveConfiguration(baseUrl, modelName, apiKey);
+          // Also save it to models.json so it appears in /mode list later
+          setActiveModel({ baseUrl, name: modelName, apiKey });
+          
           // Small delay before unmounting to ensure Ink cleanly flushes its final render
           setTimeout(() => {
             unmount();
