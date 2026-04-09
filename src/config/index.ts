@@ -56,7 +56,7 @@ export function getConfiguration(): EngineConfig {
 
   // Load global config first
   if (fs.existsSync(GLOBAL_CONFIG_FILE)) {
-    dotenv.config({ path: GLOBAL_CONFIG_FILE });
+    dotenv.config({ path: GLOBAL_CONFIG_FILE, override: true });
   }
   // Override with local config if it exists
   if (fs.existsSync(LOCAL_CONFIG_FILE)) {
