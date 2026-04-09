@@ -1,6 +1,6 @@
 {
   "name": "@sqfcy/liteagent",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "description": "A lightweight, general-purpose AI agent harness",
   "main": "dist/main.js",
   "type": "module",
