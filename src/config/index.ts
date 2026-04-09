@@ -73,14 +73,15 @@ export function getConfiguration(): EngineConfig {
 }
 
 export function setActiveModel(model: ModelConfig) {
+  // First save the global config (this updates .agentrc)
   saveConfiguration(model.baseUrl, model.name, model.apiKey);
   
-  // Ensure it's in the list
+  // Then call getModels() which reads models.json AND merges the current global config
+  // Because we just saved it, getModels() will automatically ensure it's in the array
   const models = getModels();
-  if (!models.find(m => m.name === model.name && m.baseUrl === model.baseUrl)) {
-    models.unshift(model);
-    saveModels(models);
-  }
+  
+  // Finally, persist the entire merged array back to models.json
+  saveModels(models);
 }
 
 export function saveConfiguration(baseUrl: string, modelName: string, apiKey: string): void {
