@@ -322,7 +322,14 @@ Language preference: ${currentConfig.language || 'zh-CN'}.\n\n${skillInstruction
             break;
           case 'tool_start':
             setAppState('working');
-            setProgressMsg(`Executing tool: ${event.toolName}...`);
+            let argsPreview = '';
+            try {
+              const parsed = JSON.parse(event.args || '{}');
+              const vals = Object.values(parsed).map(String);
+              if (vals.length > 0) argsPreview = ` (${vals.join(', ').substring(0, 30)}...)`;
+            } catch(e) {}
+            setProgressMsg(`Executing tool: ${event.toolName}${argsPreview}`);
+            
             // Add tool to activeTools list
             setActiveTools(prev => [...prev, { id: event.toolCallId || Date.now().toString(), name: event.toolName, args: event.args || '{}' }]);
             
