@@ -109,6 +109,7 @@ Language preference: ${currentConfig.language || 'zh-CN'}.\n\n${skillInstruction
   const currentStreamRef = useRef(''); // Use ref to safely flush in async loop
   const [finishedResponse, setFinishedResponse] = useState<string | null>(null);
   const [activeTools, setActiveTools] = useState<Array<{ id: string, name: string, args: string }>>([]);
+  const [progressMsg, setProgressMsg] = useState<string>('');
 
   const skillTool = tools.find(t => t.function.name === 'Skill');
   const skillSuggestions = skillTool ? skillTool.function.description.split('\n')
@@ -303,6 +304,9 @@ Language preference: ${currentConfig.language || 'zh-CN'}.\n\n${skillInstruction
       for await (const event of stream) {
         switch (event.type) {
           case 'debug':
+            if (event.event === 'request') setProgressMsg(`Requesting API (Loop ${event.data.loop})...`);
+            else if (event.event === 'response') setProgressMsg('Parsing response...');
+
             if (currentConfig.isDev) {
               const logPath = path.join(process.cwd(), 'lite-agent-dev.log');
               const logEntry = `[${new Date().toISOString()}] ${event.event === 'request' ? '↑ API Request' : '↓ API Response'} (Loop ${event.data.loop})\n${JSON.stringify(event.data, null, 2)}\n\n`;
@@ -311,12 +315,14 @@ Language preference: ${currentConfig.language || 'zh-CN'}.\n\n${skillInstruction
             break;
           case 'thinking':
             setAppState('thinking');
+            setProgressMsg('Analyzing context...');
             // We still track the stream for internal history/tool logic, but do not render it in the UI
             setCurrentStream(event.content);
             currentStreamRef.current = event.content;
             break;
           case 'tool_start':
             setAppState('working');
+            setProgressMsg(`Executing tool: ${event.toolName}...`);
             // Add tool to activeTools list
             setActiveTools(prev => [...prev, { id: event.toolCallId || Date.now().toString(), name: event.toolName, args: event.args || '{}' }]);
             
@@ -345,6 +351,7 @@ Language preference: ${currentConfig.language || 'zh-CN'}.\n\n${skillInstruction
             break;
           case 'tool_end':
             setAppState('thinking');
+            setProgressMsg('Analyzing tool result...');
             setActiveTools(prev => prev.filter(t => t.id !== event.toolCallId));
             // Push tool completion to history so it renders statically
             setHistory(prev => {
@@ -360,6 +367,7 @@ Language preference: ${currentConfig.language || 'zh-CN'}.\n\n${skillInstruction
             });
             break;
           case 'completed': {
+            setProgressMsg('');
             setMessages(event.finalMessages);
             const finalContent = event.content?.trim() || currentStreamRef.current?.trim();
             if (finalContent && !finalContent.startsWith('Reasoning loop ')) {
@@ -396,6 +404,7 @@ Language preference: ${currentConfig.language || 'zh-CN'}.\n\n${skillInstruction
             break;
           }
           case 'error':
+            setProgressMsg('');
             const errorMsg = { role: 'assistant' as const, content: `❌ Error: ${event.error.message}` };
             setMessages([...newMessages, errorMsg]);
             setHistory(prev => {
@@ -413,6 +422,7 @@ Language preference: ${currentConfig.language || 'zh-CN'}.\n\n${skillInstruction
         }
       }
     } catch (e: any) {
+      setProgressMsg('');
       const fatalErrorMsg = { role: 'assistant' as const, content: `❌ Fatal Error: ${e.message}` };
       setMessages([...newMessages, fatalErrorMsg]);
       setHistory(prev => {
@@ -521,7 +531,7 @@ Language preference: ${currentConfig.language || 'zh-CN'}.\n\n${skillInstruction
             <Box flexDirection="row">
               <Text bold color="cyan">■ LiteAgent: </Text>
               <Text color="yellow" italic>
-                {appState === 'thinking' ? 'Thinking... ' : 'Working... '}
+                {progressMsg || (appState === 'thinking' ? 'Thinking... ' : 'Working... ')}
               </Text>
             </Box>
             
