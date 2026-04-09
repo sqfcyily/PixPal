@@ -1,43 +1,32 @@
 #!/usr/bin/env bun
 import { getConfiguration, saveConfiguration } from './config/index.js';
 import { runChatCommand } from './commands/chat.js';
-import * as readline from 'readline';
-
-async function askQuestion(query: string): Promise<string> {
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  return new Promise(resolve => rl.question(query, ans => { 
-    rl.close(); 
-    resolve(ans); 
-  }));
-}
+import { render } from 'ink';
+import React from 'react';
+import { SetupWizard } from './buddy/SetupWizard.js';
 
 async function main() {
   let config = getConfiguration();
 
   if (!config.apiKey) {
-    console.log('🚀 Welcome to LiteAgent! Let\'s set up your agent.\n');
-    const baseUrl = await askQuestion('🔗 Enter BASE_URL (e.g. https://api.openai.com/v1): ');
-    const modelName = await askQuestion('🤖 Enter MODEL_NAME (e.g. gpt-4o): ');
-    const apiKey = await askQuestion('🔑 Enter API_KEY: ');
-
-    saveConfiguration(baseUrl, modelName, apiKey);
+    await new Promise<void>(resolve => {
+      const { unmount } = render(
+        <SetupWizard onComplete={(baseUrl, modelName, apiKey) => {
+          saveConfiguration(baseUrl, modelName, apiKey);
+          unmount();
+          resolve();
+        }} />
+      );
+    });
     config = getConfiguration();
   }
-
-  // Crucial cleanup: readline hijacks keypress events and raw mode.
-  // We must completely wipe its traces so React Ink can safely take over the terminal
-  // without immediately exiting or freezing.
-  // We do this globally because even if the setup wizard didn't run this time, 
-  // Node.js or the terminal might be in an inconsistent TTY state.
-  if (process.stdin.isTTY) {
-    process.stdin.setRawMode(true);
-  }
-  process.stdin.removeAllListeners('keypress');
 
   // Ensure stdin is active so Node.js event loop doesn't exit prematurely before Ink mounts.
   // This is required whether we ran the setup wizard (readline) or not.
   process.stdin.resume();
-  process.stdin.setEncoding('utf8');
+  if (typeof process.stdin.ref === 'function') {
+    process.stdin.ref(); // 💡 Crucial: prevent Node.js from unref-ing stdin and exiting!
+  }
   
   // 💡 Force the event loop to stay alive during the async transition phase
   // (e.g. loading MCP clients, skills) before React Ink mounts.
