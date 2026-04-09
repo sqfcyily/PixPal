@@ -309,10 +309,6 @@
                 <svg style="width: 20px; height: 20px; margin-right: 8px;" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
                 <span data-i18n="btn_github">View on GitHub</span>
             </a>
-            <button type="button" class="btn btn-secondary" onclick="copyInstall()" id="copyBtn">
-                <svg style="width: 20px; height: 20px; margin-right: 8px;" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                <span data-i18n="btn_copy">Copy install</span>
-            </button>
         </div>
 
         <h2 class="section-title" data-i18n="arch_title">Core Architecture</h2>
@@ -349,8 +345,6 @@
                 run_dev: "# Developer logs (writes lite-agent-dev.log to current dir)",
                 install_source: "# Or clone and run with Bun",
                 btn_github: "View on GitHub",
-                btn_copy: "Copy install",
-                btn_copied: "Copied",
                 arch_title: "Core Architecture",
                 card1_title: "Async Generator Engine",
                 card1_desc: "A pure REPL loop driven by asynchronous generators, flawlessly handling stream output, tool calls, and result concatenation without the overhead of heavy abstractions.",
@@ -369,8 +363,6 @@
                 run_dev: "# 开发者日志（在当前目录输出 lite-agent-dev.log）",
                 install_source: "# 或者克隆源码并使用 Bun 运行",
                 btn_github: "在 GitHub 上查看",
-                btn_copy: "复制安装命令",
-                btn_copied: "已复制",
                 arch_title: "核心架构与逻辑",
                 card1_title: "异步生成器引擎",
                 card1_desc: "纯粹的 REPL 主循环，由 Async Generator 驱动。优雅地处理流式输出、工具调用（Tool Calls）与结果拼装，摒弃臃肿的过度封装。",
@@ -385,7 +377,6 @@
         };
 
         let currentLang = 'en';
-        let copyResetTimer = null;
 
         function initLang() {
             const browserLang = navigator.language || navigator.userLanguage;
@@ -407,19 +398,6 @@
                 if (dict[currentLang] && dict[currentLang][key]) {
                     el.textContent = dict[currentLang][key];
                 }
-            });
-        }
-
-        function copyInstall() {
-            const cmd = 'npm install -g @sqfcy/liteagent';
-            navigator.clipboard.writeText(cmd).then(() => {
-                const copyEl = document.querySelector('[data-i18n=\"btn_copy\"]');
-                if (!copyEl) return;
-                copyEl.textContent = dict[currentLang].btn_copied;
-                if (copyResetTimer) clearTimeout(copyResetTimer);
-                copyResetTimer = setTimeout(() => {
-                    copyEl.textContent = dict[currentLang].btn_copy;
-                }, 1500);
             });
         }
 
