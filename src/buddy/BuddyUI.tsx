@@ -690,7 +690,7 @@ Language preference: ${currentConfig.language || 'zh-CN'}.\n\n${skillInstruction
             {/* Input Field */}
             <Box>
               <Box marginRight={1}>
-                <Text color={appState === 'error' ? 'red' : 'cyan'} bold>❯</Text>
+                <Text color={appState === 'error' ? 'red' : 'green'} bold>❯</Text>
               </Box>
               <Box flexGrow={1}>
                 {/* @ts-ignore */}
