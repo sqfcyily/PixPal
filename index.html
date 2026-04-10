@@ -184,42 +184,14 @@
             .actions { flex-direction: column; }
             .btn { justify-content: center; }
             
-            /* 修复移动端终端文字溢出与按钮重叠 */
+            /* 只修复移动端终端文字溢出，保留原版间距美感 */
             .terminal {
-                padding: 1.25rem 1rem 1rem 1rem;
-                font-size: 0.8rem;
                 overflow-wrap: break-word;
                 word-wrap: break-word;
                 white-space: pre-wrap;
-                line-height: 1.4;
-            }
-            .terminal-header {
-                margin-bottom: 1rem;
             }
             .code-line {
                 word-break: break-all;
-                display: flex;
-                flex-wrap: wrap;
-                margin-bottom: 0.15rem; /* 进一步减小行间距 */
-            }
-            br {
-                display: none;
-            }
-            .code-line.comment {
-                margin-top: 1rem; /* 注释前留出明显间距，区分不同区块 */
-                margin-bottom: 0.25rem;
-                color: #6b7280; /* 让注释颜色稍微深一点，避免和代码太像 */
-            }
-            /* 第一个注释不需要上间距 */
-            .terminal-header + .code-line.comment {
-                margin-top: 0;
-            }
-            .prompt {
-                margin-right: 0.5rem;
-                flex-shrink: 0;
-            }
-            .command {
-                flex: 1; /* 让命令内容自适应并换行 */
             }
             .lang-toggle {
                 top: 0.5rem;
